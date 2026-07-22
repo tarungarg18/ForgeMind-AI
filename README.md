@@ -1,14 +1,26 @@
 # ForgeMind AI
 
+**Live**: [forgemind.tarachand.tech](https://forgemind.tarachand.tech)
+
 Plant docs are usually scattered — manuals, inspections, work orders, incident reports.
 ForgeMind puts them in one place so teams can **upload, search, and ask** with sources.
+
+Built for the ET AI Hackathon 2026 — Problem Statement 8: *AI for Industrial Knowledge
+Intelligence: Unified Asset & Operations Brain*.
 
 ## What you can do
 
 - Upload plant documents (PDF, Word, Excel, text) — **persisted for everyone**, not discarded
+- LLM-based entity extraction on every upload (equipment tags, process parameters,
+  regulatory references, personnel, dates) that **grows the knowledge graph live**
+- Automatic conflict detection when two documents report different values for the same
+  equipment parameter, and automatic missing-document gap detection
 - Search with keyword + **semantic** (vector) matching
 - Browse equipment on a plant map and open asset history
-- Ask AI any plant question (mention tags like P-102 in the question)
+- Ask AI any plant question (mention tags like P-102 in the question), with compliance
+  flags grounded in retrieved regulation/SOP evidence — not guessed
+- A **Lessons Learned** engine that mines incident/near-miss documents for recurring
+  systemic patterns
 - See knowledge health, conflicts, and missing-doc gaps
 - Run an interactive product walkthrough (Next / Prev / Cancel)
 
@@ -89,7 +101,7 @@ Without an API key, chat still returns sample answers; semantic ranking still wo
 
 ## Docs
 
-- [Architecture](docs/ARCHITECTURE.md) — storage, ingest, retrieval
+- [Architecture](docs/ARCHITECTURE.md) — storage, ingest, retrieval, intelligence layer
 - [In-app walkthrough](docs/DEMO.md) — tour controls
 
 ## Smoke test
