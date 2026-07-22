@@ -1,0 +1,3 @@
+services: {}
+# Optional later: postgres, qdrant, neo4j
+# MVP runs with in-process knowledge store + OpenRouter.
