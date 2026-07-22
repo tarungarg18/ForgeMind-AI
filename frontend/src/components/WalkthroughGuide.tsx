@@ -30,10 +30,19 @@ export function WalkthroughGuide() {
         return;
       }
 
-      // Keep target on screen, then measure viewport coords (for position: fixed)
+      // Expand collapsed parents so the target is visible
+      let node: HTMLElement | null = el;
+      while (node) {
+        if (node.hasAttribute("hidden") || node.getAttribute("aria-hidden") === "true") {
+          node.removeAttribute("hidden");
+          node.setAttribute("aria-hidden", "false");
+        }
+        node = node.parentElement;
+      }
+
+      const dockReserve = 140;
       const r0 = el.getBoundingClientRect();
-      const margin = 24;
-      if (r0.top < margin || r0.bottom > window.innerHeight - margin) {
+      if (r0.top < 16 || r0.bottom > window.innerHeight - dockReserve) {
         el.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
       }
 
@@ -49,7 +58,7 @@ export function WalkthroughGuide() {
       });
     }
 
-    const t = window.setTimeout(measure, 200);
+    const t = window.setTimeout(measure, 250);
     window.addEventListener("resize", measure);
     window.addEventListener("scroll", measure, true);
 
@@ -63,13 +72,13 @@ export function WalkthroughGuide() {
 
   if (!active || !step) return null;
 
-  const pad = 12;
+  const pad = 10;
   const hole = rect
     ? {
         top: Math.max(8, rect.top - pad),
         left: Math.max(8, rect.left - pad),
         width: rect.width + pad * 2,
-        height: rect.height + pad * 2,
+        height: Math.min(rect.height + pad * 2, window.innerHeight - 160),
       }
     : null;
 
@@ -77,21 +86,20 @@ export function WalkthroughGuide() {
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[60]">
-      {/* Dim overlay with a clear hole — content stays visible */}
       <svg className="absolute inset-0 h-full w-full" aria-hidden>
         <defs>
           <mask id="fm-tour-mask">
             <rect x="0" y="0" width="100%" height="100%" fill="white" />
-            {hole && (
+            {hole ? (
               <rect
                 x={hole.left}
                 y={hole.top}
                 width={hole.width}
                 height={hole.height}
-                rx="14"
+                rx="12"
                 fill="black"
               />
-            )}
+            ) : null}
           </mask>
         </defs>
         <rect
@@ -99,26 +107,24 @@ export function WalkthroughGuide() {
           y="0"
           width="100%"
           height="100%"
-          fill="rgba(15, 23, 42, 0.35)"
+          fill="rgba(15, 23, 42, 0.28)"
           mask="url(#fm-tour-mask)"
         />
       </svg>
 
-      {hole && (
+      {hole ? (
         <div
-          className="absolute rounded-xl border-2 border-teal-500"
+          className="absolute rounded-xl border-2 border-teal-600"
           style={{
             top: hole.top,
             left: hole.left,
             width: hole.width,
             height: hole.height,
-            boxShadow: "0 0 0 3px rgba(13, 148, 136, 0.25)",
           }}
         />
-      )}
+      ) : null}
 
-      {/* Always-visible control dock — cannot “lose” the tour while scrolling */}
-      <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-[70] border-t border-gray-200 bg-white p-4 shadow-[0_-8px_30px_rgba(0,0,0,0.12)]">
+      <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-[70] border-t border-gray-200 bg-white p-4 shadow-[0_-6px_24px_rgba(0,0,0,0.08)]">
         <div className="mx-auto flex max-w-3xl flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0 flex-1">
             <div className="text-xs font-semibold text-teal-800">
@@ -126,11 +132,9 @@ export function WalkthroughGuide() {
             </div>
             <h3 className="mt-1 text-base font-semibold text-gray-900">{step.title}</h3>
             <p className="mt-1 text-sm leading-relaxed text-gray-600">{step.description}</p>
-            {!hole && (
-              <p className="mt-2 text-xs text-amber-700">
-                Looking for this section on the page…
-              </p>
-            )}
+            {!hole ? (
+              <p className="mt-2 text-xs text-amber-700">Looking for this section…</p>
+            ) : null}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <button
@@ -153,7 +157,7 @@ export function WalkthroughGuide() {
               onClick={next}
               className="rounded-md bg-teal-700 px-3 py-2 text-sm font-medium text-white hover:bg-teal-800"
             >
-              {isLast ? "Finish" : "Next step"}
+              {isLast ? "Finish" : "Next"}
             </button>
           </div>
         </div>

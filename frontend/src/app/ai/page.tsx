@@ -111,7 +111,6 @@ export default function AIPage() {
         <h1 className="text-2xl font-semibold text-gray-900">Ask AI</h1>
         <p className="mt-1 text-sm text-gray-500">
           Ask any plant question. Mention equipment in the question when needed (for example P-102).
-          You do not need to select equipment first.
         </p>
       </header>
 

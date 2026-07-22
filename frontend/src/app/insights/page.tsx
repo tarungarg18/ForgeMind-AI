@@ -31,7 +31,7 @@ export default function InsightsPage() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Insights</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Coverage, open issues, and a guided tour of the app.
+            Coverage, open issues, and walkthrough.
           </p>
         </div>
         <button

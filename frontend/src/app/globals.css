@@ -68,3 +68,6 @@ button:disabled,
   animation: fm-slide-in 0.2s ease-out;
 }
 
+.font-display {
+  font-family: var(--font-display), var(--font-body), system-ui, sans-serif;
+}
