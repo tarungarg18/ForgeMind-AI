@@ -15,17 +15,21 @@ export default function UploadPage() {
   const [stages, setStages] = useState<UploadStage[]>([]);
   const [busy, setBusy] = useState(false);
   const [filename, setFilename] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function onUpload(file: File) {
     setBusy(true);
     setFilename(file.name);
     setStages([]);
+    setError(null);
     try {
       const res = await api.upload(file);
       for (const stage of res.stages as UploadStage[]) {
         setStages((prev) => [...prev, stage]);
         await new Promise((r) => setTimeout(r, 400));
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -65,6 +69,11 @@ export default function UploadPage() {
             </p>
           ) : null}
         </label>
+        {error ? (
+          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-100" data-testid="upload-error">
+            {error}
+          </p>
+        ) : null}
       </section>
 
       {stages.length > 0 ? (

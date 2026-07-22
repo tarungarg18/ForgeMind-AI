@@ -57,4 +57,10 @@ export const api = {
   runDemo: () => request<any>("/demo/run", { method: "POST" }),
   incidentStory: () => request<any>("/incident-story"),
   incidentPdfUrl: `${API_URL}/incident-story/pdf`,
+  lessonsLearned: () => request<any>("/lessons-learned"),
+  approveDecision: (recommended_action: string, equipment_id?: string | null) =>
+    request<any>("/decisions/approve", {
+      method: "POST",
+      body: JSON.stringify({ recommended_action, equipment_id }),
+    }),
 };

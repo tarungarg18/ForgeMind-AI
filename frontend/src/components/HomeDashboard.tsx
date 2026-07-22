@@ -10,11 +10,12 @@ export function HomeDashboard() {
   const [health, setHealth] = useState<number | null>(null);
   const [recs, setRecs] = useState<Array<{ id: string; title: string; priority: string }>>([]);
   const [notes, setNotes] = useState<Array<{ id: string; message: string }>>([]);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    api.knowledgeHealth().then((h) => setHealth(h.knowledge_health)).catch(() => {});
-    api.recommendations().then((r) => setRecs(r.slice(0, 3))).catch(() => {});
-    api.notifications().then((n) => setNotes(n.slice(0, 3))).catch(() => {});
+    api.knowledgeHealth().then((h) => setHealth(h.knowledge_health)).catch(() => setLoadError(true));
+    api.recommendations().then((r) => setRecs(r.slice(0, 3))).catch(() => setLoadError(true));
+    api.notifications().then((n) => setNotes(n.slice(0, 3))).catch(() => setLoadError(true));
   }, []);
 
   return (
@@ -25,6 +26,12 @@ export function HomeDashboard() {
           Upload docs, inspect equipment, ask questions, review insights.
         </p>
       </header>
+
+      {loadError ? (
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-100">
+          Couldn&apos;t reach the ForgeMind backend. Make sure the API server is running.
+        </p>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Link href="/upload" className="fm-card p-4 hover:bg-gray-50">

@@ -11,7 +11,9 @@ export default function InsightsPage() {
   const [conflicts, setConflicts] = useState<any[]>([]);
   const [gaps, setGaps] = useState<any[]>([]);
   const [compare, setCompare] = useState<any>(null);
+  const [compareQuery, setCompareQuery] = useState("Pump P-102 failure");
   const [story, setStory] = useState<any>(null);
+  const [lessons, setLessons] = useState<any>(null);
 
   useEffect(() => {
     api.knowledgeHealth().then(setHealth).catch(console.error);
@@ -19,10 +21,12 @@ export default function InsightsPage() {
     api.conflicts().then(setConflicts).catch(console.error);
     api.gaps().then(setGaps).catch(console.error);
     api.incidentStory().then(setStory).catch(console.error);
+    api.lessonsLearned().then(setLessons).catch(console.error);
   }, []);
 
   async function runCompare() {
-    setCompare(await api.searchCompare("Pump P-102 failure"));
+    if (!compareQuery.trim()) return;
+    setCompare(await api.searchCompare(compareQuery));
   }
 
   return (
@@ -142,13 +146,22 @@ export default function InsightsPage() {
             <div className="text-sm font-semibold text-gray-900">3. Search vs ForgeMind</div>
             <p className="text-xs text-gray-500">Rough time comparison for the same question</p>
           </div>
-          <button
-            type="button"
-            onClick={runCompare}
-            className="rounded-md bg-white px-3 py-1.5 text-sm text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50"
-          >
-            Compare
-          </button>
+          <div className="flex gap-2">
+            <input
+              value={compareQuery}
+              onChange={(e) => setCompareQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && runCompare()}
+              placeholder="e.g. Pump P-102 failure"
+              className="w-56 rounded-md border border-gray-200 px-3 py-1.5 text-sm outline-none focus:border-teal-600"
+            />
+            <button
+              type="button"
+              onClick={runCompare}
+              className="rounded-md bg-white px-3 py-1.5 text-sm text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50"
+            >
+              Compare
+            </button>
+          </div>
         </div>
         {compare && (
           <div className="grid gap-4 md:grid-cols-2">
@@ -174,11 +187,39 @@ export default function InsightsPage() {
         )}
       </section>
 
+      {lessons && (
+        <section className="space-y-3">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">4. Lessons learned</div>
+            <p className="text-xs text-gray-500">Recurring patterns mined from incident and near-miss reports</p>
+          </div>
+          <div className="fm-card p-4">
+            <p className="text-sm text-gray-800">{lessons.summary}</p>
+            {lessons.patterns?.length > 0 && (
+              <ul className="mt-3 space-y-1 text-sm text-gray-700">
+                {lessons.patterns.map((p: string, i: number) => (
+                  <li key={i}>- {p}</li>
+                ))}
+              </ul>
+            )}
+            {lessons.documents_used?.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {lessons.documents_used.map((d: any) => (
+                  <span key={d.id} className="rounded-md bg-gray-50 px-2 py-1 text-xs text-gray-600 ring-1 ring-gray-200">
+                    {d.title}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {story && (
         <section className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="text-sm font-semibold text-gray-900">4. Incident summary</div>
+              <div className="text-sm font-semibold text-gray-900">5. Incident summary</div>
               <p className="text-xs text-gray-500">Auto write-up from the near-miss report</p>
             </div>
             <a

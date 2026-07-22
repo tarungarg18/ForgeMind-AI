@@ -40,7 +40,7 @@ def main() -> int:
         b"RMS velocity elevated on drive end.\n"
         b"Recommend predictive maintenance within 7 days."
     )
-    result = ingest_upload("smoke_vib_P-102.txt", payload, store.equipment)
+    result = asyncio.run(ingest_upload("smoke_vib_P-102.txt", payload, store.equipment))
     store.add_document(result["document"], result["event"])
     assert result["chunks"] >= 1
     assert result["document"].id in store.documents

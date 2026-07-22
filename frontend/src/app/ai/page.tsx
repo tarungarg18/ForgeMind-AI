@@ -5,6 +5,8 @@ import { Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { DecisionCardView } from "@/components/DecisionCard";
 import { EvidenceHeatmap } from "@/components/EvidenceHeatmap";
+import { useEquipment } from "@/components/EquipmentContext";
+import { GraphView } from "@/components/GraphView";
 
 const MODES = [
   { id: "engineer", label: "Engineer" },
@@ -33,32 +35,37 @@ function inferEquipmentId(message: string): string {
 }
 
 export default function AIPage() {
+  const { equipmentId } = useEquipment();
   const [mode, setMode] = useState("manager");
   const [message, setMessage] = useState("Why did Pump P-102 fail?");
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
   const [sim, setSim] = useState<any>(null);
   const [graph, setGraph] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function ask(text?: string) {
     const msg = text || message;
     setLoading(true);
     setSim(null);
+    setError(null);
     try {
-      const inferred = inferEquipmentId(msg);
+      const inferred = equipmentId || inferEquipmentId(msg);
       if (msg.toLowerCase().includes("postpon") || msg.toLowerCase().includes("simulator")) {
         setSim(await api.simulate(inferred));
       }
       const res = await api.chat({
         message: msg,
         mode,
-        equipment_id: null,
+        equipment_id: inferred,
       });
       setResponse(res);
       const related = res.context_equipment_id || inferred;
       if (msg.toLowerCase().includes("connected") || res.impact_radius?.length) {
         setGraph(await api.graph(related));
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -67,7 +74,11 @@ export default function AIPage() {
   async function onFollowup(action: string) {
     if (action === "Run Simulator") {
       const id = response?.context_equipment_id || inferEquipmentId(message);
-      setSim(await api.simulate(id));
+      try {
+        setSim(await api.simulate(id));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Simulator failed. Please try again.");
+      }
       return;
     }
     if (action === "View Timeline") {
@@ -90,14 +101,17 @@ export default function AIPage() {
     reader.onload = async () => {
       const b64 = String(reader.result || "");
       setLoading(true);
+      setError(null);
       try {
         const res = await api.chat({
           message: "What is this valve?",
           mode,
-          equipment_id: null,
+          equipment_id: equipmentId,
           image_b64: b64,
         });
         setResponse(res);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Image analysis failed. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -203,7 +217,13 @@ export default function AIPage() {
           </p>
         </div>
 
-        {!response && (
+        {error ? (
+          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700 ring-1 ring-red-100" data-testid="ask-error">
+            {error}
+          </p>
+        ) : null}
+
+        {!response && !error && (
           <div className="fm-card border-dashed p-6 text-sm text-gray-500">
             Waiting for a question. Try “Why did Pump P-102 fail?”
           </div>
@@ -216,7 +236,11 @@ export default function AIPage() {
               <p className="mt-2">{response.answer}</p>
             </div>
 
-            <DecisionCardView card={response.decision_card} onFollowup={onFollowup} />
+            <DecisionCardView
+              card={response.decision_card}
+              equipmentId={response.context_equipment_id || equipmentId}
+              onFollowup={onFollowup}
+            />
 
             <div className="grid gap-4 md:grid-cols-2">
               {response.explain && (
@@ -280,13 +304,8 @@ export default function AIPage() {
               ))}
             </div>
             {graph && (
-              <div className="mt-4 max-h-56 space-y-1 overflow-auto text-xs text-gray-600">
-                {graph.edges?.slice(0, 20).map((e: any) => (
-                  <div key={e.id}>
-                    {e.source} --{(e.confidence * 100).toFixed(0)}%--&gt; {e.target}
-                    <span className="text-gray-400"> ({e.relation})</span>
-                  </div>
-                ))}
+              <div className="mt-4 rounded-md bg-gray-50 p-2 ring-1 ring-gray-200">
+                <GraphView nodes={graph.nodes || []} edges={graph.edges || []} />
               </div>
             )}
             {response?.explain?.documents_used && (

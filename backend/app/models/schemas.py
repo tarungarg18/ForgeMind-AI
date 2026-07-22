@@ -18,6 +18,7 @@ class Document(BaseModel):
     content: str = ""
     page_count: int = 1
     uploaded_at: str = ""
+    entities: dict[str, Any] = Field(default_factory=dict)
 
 
 class AssetEvent(BaseModel):
@@ -85,6 +86,7 @@ class Recommendation(BaseModel):
     detail: str
     equipment_id: Optional[str] = None
     action_type: str = "general"
+    approved: bool = False
 
 
 class ChatRequest(BaseModel):

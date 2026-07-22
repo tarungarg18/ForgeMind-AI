@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from copy import deepcopy
 from typing import Any
 
@@ -382,7 +383,21 @@ def _recommendations() -> list[Recommendation]:
     ]
 
 
+_NUM_RE = re.compile(r"(-?\d+(?:\.\d+)?)")
+
+
+def _numeric(value: str) -> float | None:
+    m = _NUM_RE.search(value or "")
+    return float(m.group(1)) if m else None
+
+
+def _slug(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:24] or "ref"
+
+
 class KnowledgeStore:
+    EXPECTED_DOC_TYPES = ["manual", "inspection", "maintenance"]
+
     def __init__(self) -> None:
         self.upload_jobs: dict[str, list[dict[str, Any]]] = {}
         self.query_log: list[dict[str, Any]] = []
@@ -451,10 +466,112 @@ class KnowledgeStore:
         if event:
             self.events.append(event)
             db.upsert_event(event)
-        self.graph_stats = {
-            "nodes": len(self.nodes) + len(self.documents),
-            "edges": len(self.edges) + max(0, len(doc.equipment_ids)),
-        }
+        self._grow_graph(doc)
+        self._detect_conflicts(doc)
+        self._recompute_gaps(doc.equipment_ids)
+        self.graph_stats = {"nodes": len(self.nodes), "edges": len(self.edges)}
+
+    def _grow_graph(self, doc: Document) -> None:
+        """Add a real node/edges for a newly ingested document instead of leaving the graph static."""
+        if doc.id not in self.nodes:
+            self.nodes[doc.id] = GraphNode(
+                id=doc.id, label=doc.title, kind="document", meta={"trust": doc.trust_score}
+            )
+        existing_edge_ids = {e.id for e in self.edges}
+        for eq_id in doc.equipment_ids:
+            if eq_id not in self.nodes:
+                continue
+            edge_id = f"e-{doc.id}-{eq_id}"
+            if edge_id not in existing_edge_ids:
+                self.edges.append(
+                    GraphEdge(id=edge_id, source=doc.id, target=eq_id, relation="REFERENCED_IN", confidence=0.8)
+                )
+                existing_edge_ids.add(edge_id)
+
+        for ref in (doc.entities or {}).get("regulatory_references", [])[:5]:
+            reg_id = f"reg-{_slug(str(ref))}"
+            if reg_id not in self.nodes:
+                self.nodes[reg_id] = GraphNode(id=reg_id, label=str(ref), kind="regulation", meta={})
+            for eq_id in doc.equipment_ids:
+                edge_id = f"e-{eq_id}-{reg_id}"
+                if edge_id not in existing_edge_ids:
+                    self.edges.append(
+                        GraphEdge(id=edge_id, source=eq_id, target=reg_id, relation="SUBJECT_TO", confidence=0.75)
+                    )
+                    existing_edge_ids.add(edge_id)
+
+    def _detect_conflicts(self, doc: Document) -> None:
+        """Compare freshly-extracted process parameters against prior documents for the same equipment."""
+        params = (doc.entities or {}).get("process_parameters", [])
+        for p in params:
+            name = str(p.get("name", "")).strip().lower()
+            value = str(p.get("value", "")).strip()
+            num = _numeric(value)
+            if not name or num is None:
+                continue
+            for eq_id in doc.equipment_ids:
+                eq = self.equipment.get(eq_id)
+                label = eq.tag if eq else eq_id
+                for other in self.documents.values():
+                    if other.id == doc.id or eq_id not in other.equipment_ids:
+                        continue
+                    for op in (other.entities or {}).get("process_parameters", []):
+                        if str(op.get("name", "")).strip().lower() != name:
+                            continue
+                        onum = _numeric(str(op.get("value", "")))
+                        if onum is None or onum == 0:
+                            continue
+                        if abs(num - onum) / abs(onum) <= 0.1:
+                            continue
+                        cf_id = f"cf-{eq_id}-{_slug(name)}"
+                        entry_new = {"document_id": doc.id, "value": value, "source": doc.title}
+                        entry_old = {
+                            "document_id": other.id,
+                            "value": str(op.get("value", "")),
+                            "source": other.title,
+                        }
+                        existing = next((c for c in self.conflicts if c.id == cf_id), None)
+                        if existing:
+                            if not any(v.get("document_id") == doc.id for v in existing.values):
+                                existing.values.append(entry_new)
+                        else:
+                            self.conflicts.append(
+                                Conflict(
+                                    id=cf_id,
+                                    entity=label,
+                                    field=name,
+                                    values=[entry_old, entry_new],
+                                    severity="high",
+                                    summary=(
+                                        f"{label} {name} differs across documents: "
+                                        f"{entry_old['value']} ({entry_old['source']}) vs "
+                                        f"{entry_new['value']} ({entry_new['source']})."
+                                    ),
+                                )
+                            )
+
+    def _recompute_gaps(self, equipment_ids: list[str]) -> None:
+        """Recompute auto-detected doc-type gaps for equipment touched by a new upload."""
+        for eq_id in equipment_ids:
+            present = {d.doc_type for d in self.documents.values() if eq_id in d.equipment_ids}
+            eq = self.equipment.get(eq_id)
+            tag = eq.tag if eq else eq_id
+            for dtype in self.EXPECTED_DOC_TYPES:
+                gap_id = f"gap-auto-{eq_id}-{dtype}"
+                has_gap = any(g.id == gap_id for g in self.gaps)
+                if dtype in present:
+                    if has_gap:
+                        self.gaps = [g for g in self.gaps if g.id != gap_id]
+                elif not has_gap:
+                    self.gaps.append(
+                        KnowledgeGap(
+                            id=gap_id,
+                            equipment_id=eq_id,
+                            missing_doc_type=dtype,
+                            severity="medium",
+                            message=f"{tag} has no {dtype.replace('_', ' ')} document on file yet.",
+                        )
+                    )
 
     def knowledge_health(self) -> KnowledgeHealth:
         missing = len(self.gaps)

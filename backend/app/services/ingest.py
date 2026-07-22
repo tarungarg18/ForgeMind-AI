@@ -37,6 +37,55 @@ def _guess_doc_type(filename: str, text: str) -> str:
     return "upload"
 
 
+def _match_tag_to_id(tag: str, equipment: dict[str, Any]) -> str | None:
+    norm = tag.upper().replace(" ", "").replace("-", "")
+    for eq in equipment.values():
+        if eq.tag.upper().replace("-", "") == norm:
+            return eq.id
+    return None
+
+
+async def _extract_entities(
+    text: str,
+    filename: str,
+    fallback_tags: list[str],
+) -> dict[str, Any]:
+    """LLM-based structured entity extraction; falls back to regex-only tags."""
+    base: dict[str, Any] = {
+        "equipment_tags": fallback_tags,
+        "process_parameters": [],
+        "regulatory_references": [],
+        "personnel": [],
+        "dates": [],
+    }
+    settings = get_settings()
+    if not settings.openrouter_api_key or settings.force_demo_llm or not text.strip():
+        return base
+
+    from app.services.openrouter import chat_json
+
+    prompt = (
+        "Extract structured entities from this industrial plant document. "
+        "Return strict JSON with exactly these keys: "
+        "equipment_tags (list of equipment tag strings like P-102), "
+        "process_parameters (list of objects {name, value, unit}, e.g. operating pressure/temperature readings), "
+        "regulatory_references (list of strings, e.g. OISD, Factory Act, PESO, DGMS), "
+        "personnel (list of person names mentioned), "
+        "dates (list of date strings mentioned). "
+        "Only include what is explicitly present in the text; use an empty list for anything absent. "
+        "Respond with JSON only.\n\n"
+        f"Filename: {filename}\n\nDocument text:\n{text[:6000]}"
+    )
+    try:
+        data = await chat_json([{"role": "user", "content": prompt}])
+        for key, default in base.items():
+            if key not in data or not isinstance(data[key], list):
+                data[key] = default
+        return data
+    except Exception:
+        return base
+
+
 def _link_equipment(text: str, equipment: dict[str, Any]) -> list[str]:
     found: list[str] = []
     lower = text.lower()
@@ -60,7 +109,7 @@ def _link_equipment(text: str, equipment: dict[str, Any]) -> list[str]:
     return found[:6]
 
 
-def ingest_upload(
+async def ingest_upload(
     filename: str,
     data: bytes,
     equipment: dict[str, Any],
@@ -76,6 +125,16 @@ def ingest_upload(
 
     doc_id = f"doc-upload-{job_id}"
     eq_ids = _link_equipment(f"{safe_name}\n{text}", equipment)
+    fallback_tags = [equipment[i].tag for i in eq_ids if i in equipment]
+    entities = await _extract_entities(text, safe_name, fallback_tags)
+
+    # Fold any equipment tags the LLM found but the regex/fuzzy matcher missed.
+    for tag in entities.get("equipment_tags", []):
+        matched = _match_tag_to_id(str(tag), equipment)
+        if matched and matched not in eq_ids:
+            eq_ids.append(matched)
+    eq_ids = eq_ids[:6]
+
     summary = (text[:220] + "…") if len(text) > 220 else text
     doc = Document(
         id=doc_id,
@@ -90,6 +149,7 @@ def ingest_upload(
         content=text[:20000],
         page_count=page_count,
         uploaded_at=date.today().isoformat(),
+        entities=entities,
     )
 
     stages = [
@@ -100,7 +160,12 @@ def ingest_upload(
         },
         {
             "stage": "entities",
-            "detail": f"Linked equipment: {', '.join(eq_ids) if eq_ids else 'none detected'}",
+            "detail": (
+                f"Linked equipment: {', '.join(eq_ids) if eq_ids else 'none detected'}; "
+                f"{len(entities.get('process_parameters', []))} parameters, "
+                f"{len(entities.get('regulatory_references', []))} regulations, "
+                f"{len(entities.get('personnel', []))} personnel found"
+            ),
             "done": True,
         },
     ]

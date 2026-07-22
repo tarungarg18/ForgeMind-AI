@@ -111,6 +111,26 @@ def _semantic_context(message: str, equipment_id: Optional[str], limit: int = 8)
     return ranked[:limit] or _docs_for_equipment(equipment_id)
 
 
+def _regulatory_context(equipment_id: Optional[str]) -> list[dict[str, Any]]:
+    """Docs a compliance answer must be grounded in — regulation/compliance/SOP text only."""
+    out = []
+    for d in store.documents.values():
+        if d.doc_type not in {"regulation", "compliance", "sop"}:
+            continue
+        if equipment_id and d.equipment_ids and equipment_id not in d.equipment_ids:
+            continue
+        out.append(
+            {
+                "id": d.id,
+                "title": d.title,
+                "doc_type": d.doc_type,
+                "summary": d.summary,
+                "content": d.content[:500],
+            }
+        )
+    return out[:8]
+
+
 def _resolve_equipment_id(message: str, equipment_id: Optional[str]) -> Optional[str]:
     """Prefer tags mentioned in the question; ignore UI selection."""
     lower = message.lower()
@@ -305,12 +325,15 @@ async def answer_query(req: ChatRequest) -> ChatResponse:
         if not resolved or g.equipment_id == resolved
     ]
 
+    regulatory_context = _regulatory_context(resolved)
     system = (
         "You are ForgeMind AI. Help plant staff find answers from equipment docs and history. "
         "The user may ask about any plant topic. Infer equipment from the question when mentioned. "
         "Return JSON only with keys: answer, recommended_action, risk, business_impact, "
-        "confidence, compliance (Factory Act/PESO/OISD as pass|warn|fail), reasoning_path (array), "
+        "confidence, compliance (Factory Act/PESO/OISD as pass|warn|fail|unknown), reasoning_path (array), "
         "evidence (array). "
+        "IMPORTANT: base each compliance flag ONLY on the regulatory_context documents provided below — "
+        "if there is no regulatory_context evidence for a framework, set its value to 'unknown' rather than guessing. "
         f"Answer style: {req.mode}. {MODE_INSTRUCTIONS.get(req.mode, '')} "
         "Prefer newer, verified documents. Mention conflicts or missing docs if relevant."
     )
@@ -318,6 +341,7 @@ async def answer_query(req: ChatRequest) -> ChatResponse:
         "question": req.message,
         "inferred_equipment": ctx,
         "documents": docs,
+        "regulatory_context": regulatory_context,
         "conflicts": conflicts,
         "gaps": gaps,
         "impact_radius": store.impact_radius(resolved) if resolved else [],
@@ -383,6 +407,64 @@ def simulate(req: SimulateRequest) -> dict[str, Any]:
         ],
         "recommendation": "Do not postpone. Execute seal replacement window within 12 days.",
     }
+
+
+async def lessons_learned(equipment_id: Optional[str] = None) -> dict[str, Any]:
+    """Mine incident/near-miss documents for recurring systemic patterns."""
+    docs = [d for d in store.documents.values() if d.doc_type in {"incident", "near_miss"}]
+    if equipment_id:
+        scoped = [d for d in docs if equipment_id in d.equipment_ids]
+        docs = scoped or docs
+    docs = sorted(docs, key=lambda d: d.trust_score, reverse=True)[:8]
+
+    if not docs:
+        return {"summary": "No incident or near-miss documents on file yet.", "patterns": [], "documents_used": []}
+
+    documents_used = [{"id": d.id, "title": d.title} for d in docs]
+
+    if get_openrouter_client() is None:
+        return {
+            "summary": (
+                "Seeded pattern: repeated seal/bearing degradation and delayed predictive maintenance "
+                "precede most recorded incidents."
+            ),
+            "patterns": [d.summary for d in docs[:5]],
+            "documents_used": documents_used,
+        }
+
+    payload = {
+        "incidents": [
+            {"id": d.id, "title": d.title, "summary": d.summary, "content": d.content[:800]} for d in docs
+        ]
+    }
+    system = (
+        "You are ForgeMind AI's Lessons Learned engine. Given a set of incident/near-miss documents, "
+        "identify recurring systemic patterns (root causes, contractors, equipment classes) that a single "
+        "review would miss. Return JSON only with keys: summary (string), patterns (array of short strings)."
+    )
+    try:
+        raw = await chat_completion(
+            [
+                {"role": "system", "content": system},
+                {"role": "user", "content": json.dumps(payload)},
+            ],
+            response_json=True,
+        )
+        data = json.loads(raw)
+        return {
+            "summary": data.get("summary", ""),
+            "patterns": data.get("patterns", []),
+            "documents_used": documents_used,
+        }
+    except Exception:
+        return {
+            "summary": (
+                "Fallback pattern: repeated seal/bearing degradation and delayed predictive maintenance "
+                "precede most recorded incidents."
+            ),
+            "patterns": [d.summary for d in docs[:5]],
+            "documents_used": documents_used,
+        }
 
 
 def build_incident_story(document_id: str = "doc-incident-p102-2025") -> dict[str, Any]:

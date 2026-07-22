@@ -1,14 +1,31 @@
 "use client";
 
+import { useState } from "react";
+import { api } from "@/lib/api";
+
 export function DecisionCardView({
   card,
+  equipmentId,
   onFollowup,
 }: {
   card: any;
+  equipmentId?: string | null;
   onFollowup?: (action: string) => void;
 }) {
+  const [approved, setApproved] = useState(false);
+  const [approving, setApproving] = useState(false);
   if (!card) return null;
   const compliance = card.compliance || {};
+
+  async function approve() {
+    setApproving(true);
+    try {
+      await api.approveDecision(card.recommended_action, equipmentId);
+      setApproved(true);
+    } finally {
+      setApproving(false);
+    }
+  }
 
   return (
     <div className="fm-card overflow-hidden">
@@ -39,8 +56,13 @@ export function DecisionCardView({
       </div>
 
       <div className="flex flex-wrap gap-2 border-t border-gray-200 bg-gray-50 px-4 py-3">
-        <button className="rounded-md bg-teal-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-800">
-          Approve action
+        <button
+          type="button"
+          onClick={approve}
+          disabled={approved || approving}
+          className="rounded-md bg-teal-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
+        >
+          {approved ? "Approved ✓" : approving ? "Approving…" : "Approve action"}
         </button>
         {(card.followups || []).map((f: string) => (
           <button

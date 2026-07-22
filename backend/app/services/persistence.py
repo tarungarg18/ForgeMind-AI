@@ -37,7 +37,8 @@ def init_db() -> None:
                 content TEXT NOT NULL DEFAULT '',
                 page_count INTEGER NOT NULL DEFAULT 1,
                 uploaded_at TEXT NOT NULL DEFAULT '',
-                source_filename TEXT NOT NULL DEFAULT ''
+                source_filename TEXT NOT NULL DEFAULT '',
+                entities TEXT NOT NULL DEFAULT '{}'
             );
 
             CREATE TABLE IF NOT EXISTS equipment (
@@ -66,6 +67,11 @@ def init_db() -> None:
             """
         )
         conn.commit()
+        try:
+            conn.execute("ALTER TABLE documents ADD COLUMN entities TEXT NOT NULL DEFAULT '{}'")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
     finally:
         conn.close()
 
@@ -94,6 +100,7 @@ def _doc_from_row(row: sqlite3.Row) -> Document:
         content=row["content"] or "",
         page_count=row["page_count"] or 1,
         uploaded_at=row["uploaded_at"] or "",
+        entities=json.loads(row["entities"] or "{}"),
     )
 
 
@@ -105,8 +112,8 @@ def upsert_document(doc: Document, source_filename: str = "") -> None:
             INSERT INTO documents (
                 id, title, doc_type, equipment_ids, trust_score, freshness,
                 verified, signed, superseded_by, summary, content, page_count,
-                uploaded_at, source_filename
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                uploaded_at, source_filename, entities
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(id) DO UPDATE SET
                 title=excluded.title,
                 doc_type=excluded.doc_type,
@@ -120,7 +127,8 @@ def upsert_document(doc: Document, source_filename: str = "") -> None:
                 content=excluded.content,
                 page_count=excluded.page_count,
                 uploaded_at=excluded.uploaded_at,
-                source_filename=excluded.source_filename
+                source_filename=excluded.source_filename,
+                entities=excluded.entities
             """,
             (
                 doc.id,
@@ -137,6 +145,7 @@ def upsert_document(doc: Document, source_filename: str = "") -> None:
                 doc.page_count,
                 doc.uploaded_at,
                 source_filename,
+                json.dumps(doc.entities or {}),
             ),
         )
         conn.commit()

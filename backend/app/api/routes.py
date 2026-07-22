@@ -8,7 +8,7 @@ from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import Response
 
 from app.models.schemas import ChatRequest, SimulateRequest
-from app.services.intelligence import answer_query, build_incident_story, simulate
+from app.services.intelligence import answer_query, build_incident_story, lessons_learned, simulate
 from app.services.store import store
 
 router = APIRouter()
@@ -118,6 +118,31 @@ async def gaps() -> list[dict[str, Any]]:
 @router.get("/recommendations")
 async def recommendations() -> list[dict[str, Any]]:
     return [r.model_dump() for r in store.recommendations]
+
+
+@router.post("/recommendations/{recommendation_id}/approve")
+async def approve_recommendation(recommendation_id: str) -> dict[str, Any]:
+    for r in store.recommendations:
+        if r.id == recommendation_id:
+            r.approved = True
+            return r.model_dump()
+    return {"error": "not_found", "id": recommendation_id}
+
+
+@router.post("/decisions/approve")
+async def approve_decision(body: dict[str, Any]) -> dict[str, Any]:
+    action = body.get("recommended_action", "action")
+    equipment_id = body.get("equipment_id")
+    store.notifications.insert(
+        0,
+        {
+            "id": f"appr-{uuid.uuid4().hex[:6]}",
+            "type": "approval",
+            "message": f"Approved: {action}" + (f" ({equipment_id})" if equipment_id else ""),
+            "ts": "now",
+        },
+    )
+    return {"approved": True, "recommended_action": action}
 
 
 @router.get("/notifications")
@@ -234,6 +259,11 @@ async def simulate_decision(req: SimulateRequest) -> dict[str, Any]:
     return simulate(req)
 
 
+@router.get("/lessons-learned")
+async def lessons_learned_route(equipment_id: str | None = None) -> dict[str, Any]:
+    return await lessons_learned(equipment_id)
+
+
 @router.get("/incident-story")
 async def incident_story(document_id: str = "doc-incident-p102-2025") -> dict[str, Any]:
     return build_incident_story(document_id)
@@ -280,7 +310,7 @@ async def upload(file: UploadFile = File(...)) -> dict[str, Any]:
     from app.services.persistence import data_paths
 
     content = await file.read()
-    result = ingest_upload(file.filename or "upload.txt", content, store.equipment)
+    result = await ingest_upload(file.filename or "upload.txt", content, store.equipment)
     doc = result["document"]
     event = result["event"]
     store.add_document(doc, event)
