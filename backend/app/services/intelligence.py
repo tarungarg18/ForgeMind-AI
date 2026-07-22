@@ -1,4 +1,4 @@
-"""ForgeMind Decision Intelligence — OpenRouter-backed with seeded fallback."""
+"""Chat + recommendations. Uses OpenRouter when configured, else sample answers."""
 
 from __future__ import annotations
 
@@ -199,7 +199,7 @@ def _seeded_decision(message: str, mode: str, equipment_id: Optional[str]) -> Ch
             "Retrieve trust-ranked documents",
             "Expand knowledge graph neighborhood",
             "Detect conflicts and gaps",
-            "Compose Decision Card",
+            "Suggest next action",
         ],
         graph_hops=impact[:6],
         documents_used=[{"id": d["id"], "title": d["title"], "trust": d["trust_score"]} for d in docs[:5]],
@@ -231,12 +231,12 @@ async def answer_query(req: ChatRequest) -> ChatResponse:
     gaps = [g.model_dump() for g in store.gaps if not ctx or g.equipment_id == ctx.get("equipment_id")]
 
     system = (
-        "You are ForgeMind AI, an industrial Decision Intelligence copilot. "
-        "Always return strict JSON with keys: answer, recommended_action, risk, business_impact, "
+        "You are ForgeMind AI. Help plant staff find answers from equipment docs and history. "
+        "Return JSON only with keys: answer, recommended_action, risk, business_impact, "
         "confidence, compliance (Factory Act/PESO/OISD as pass|warn|fail), reasoning_path (array), "
         "evidence (array). "
-        f"Persona mode: {req.mode}. {MODE_INSTRUCTIONS.get(req.mode, '')} "
-        "Prefer high trust_score documents. Call out conflicts and knowledge gaps."
+        f"Answer style: {req.mode}. {MODE_INSTRUCTIONS.get(req.mode, '')} "
+        "Prefer newer, verified documents. Mention conflicts or missing docs if relevant."
     )
     user_payload = {
         "question": req.message,

@@ -17,8 +17,8 @@ const display = Sora({
 });
 
 export const metadata: Metadata = {
-  title: "ForgeMind AI — Industrial Knowledge Intelligence",
-  description: "Ask Anything About Your Plant. Decision Intelligence for industrial operations.",
+  title: "ForgeMind AI",
+  description: "Ask questions about plant equipment using your documents.",
 };
 
 export default function RootLayout({

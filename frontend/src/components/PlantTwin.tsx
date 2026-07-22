@@ -22,10 +22,10 @@ export function PlantTwin({
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
         <div>
           <h2 className="font-[family-name:var(--font-display)] text-xl text-white">
-            Plant Twin View
+            Plant map
           </h2>
           <p className="text-sm text-slate-400">
-            Section layout — click an asset to open its memory
+            Click equipment to open its history
           </p>
         </div>
         <div className="flex gap-3 text-xs text-slate-400">

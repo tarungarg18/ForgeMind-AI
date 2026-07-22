@@ -1,46 +1,36 @@
 # ForgeMind AI
 
-**Industrial Knowledge Intelligence Platform**  
-Tagline: *Ask Anything About Your Plant.*
+Plant docs are usually scattered — manuals, inspections, work orders, incident reports.
+ForgeMind puts them in one place so you can ask questions about equipment and get answers with sources.
 
-ET AI Hackathon 2026 — **Problem Statement 8**: AI for Industrial Knowledge Intelligence.
+## What you can do
 
-## What it is
+- Upload PDFs and other plant documents
+- See equipment on a simple plant map
+- Open an asset timeline (install → maintenance → incidents)
+- Ask questions in chat (answers include a recommended action)
+- Spot missing docs, conflicts between documents, and compliance gaps
 
-ForgeMind is **Decision Intelligence** for industrial plants — not a chatbot over PDFs.
-
-- **Plant Twin View** (SVG floor map)
-- **Digital Memory Timeline** (Git history for assets)
-- **Enterprise Decision Center** (every answer ends as a Decision Card)
-- **Contextual Copilot** (asset-aware)
-- **Cross-document conflict detection** + **Document trust scores**
-- **Knowledge gaps / health score**
-- **Interactive Demo Mode** for judging
-
-Agents run internally via orchestration. Users see four surfaces only:
-
-`Upload → Knowledge Base → ForgeMind AI → Insights`
+Main screens: **Upload**, **Knowledge Base**, **ForgeMind AI**, **Insights**
 
 ## Stack
 
-| Layer | Tech |
-|---|---|
-| Frontend | Next.js, Tailwind, IBM Plex / Sora |
-| Backend | FastAPI |
-| LLM | **OpenRouter** (OpenAI-compatible) |
-| Knowledge | Seeded industrial graph + trust-ranked retrieval |
+- Frontend: Next.js + Tailwind
+- Backend: FastAPI
+- LLM: OpenRouter
+- Sample plant data is seeded for local demo
 
-## Quick start
+## Setup
 
 ### Backend
 
 ```bash
 cd backend
 python -m venv .venv
-# Windows:
 .\.venv\Scripts\activate
 pip install -r requirements.txt
-copy .env.example .env   # set OPENROUTER_API_KEY
+copy .env.example .env
+# put your OpenRouter key in .env
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -53,25 +43,25 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000
+App: http://localhost:3000  
+API: http://127.0.0.1:8000/docs
 
-## OpenRouter
+## Env
 
-Set in `backend/.env`:
+`backend/.env`:
 
 ```
-OPENROUTER_API_KEY=sk-or-...
+OPENROUTER_API_KEY=your_key
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_MODEL=google/gemini-2.0-flash-001
 ```
 
-If the key is missing, the API falls back to high-quality seeded Decision Intelligence responses (demo-safe).
+If no key is set, chat still works using the built-in sample answers.
 
-## Demo path
+## Quick try
 
-1. Insights → **Run Demo**
-2. Or: Upload → Knowledge Base (click P-102) → ForgeMind AI → Decision Card → Insights Health Score
+1. Open Knowledge Base and click pump **P-102**
+2. Go to ForgeMind AI and ask why it failed
+3. Or hit **Run Demo** on Insights
 
-## Repository
-
-https://github.com/tarungarg18/ForgeMind-AI
+Repo: https://github.com/tarungarg18/ForgeMind-AI

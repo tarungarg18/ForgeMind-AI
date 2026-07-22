@@ -47,8 +47,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="font-[family-name:var(--font-display)] text-lg tracking-tight text-white">
                 ForgeMind AI
               </div>
-              <div className="text-[11px] uppercase tracking-[0.18em] text-cyan-200/70">
-                Industrial Knowledge Intelligence
+              <div className="text-xs text-cyan-200/70">
+                Plant knowledge assistant
               </div>
             </div>
           </Link>
@@ -78,8 +78,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="ml-auto flex items-center gap-3">
             {health !== null && (
               <div className="hidden items-center gap-2 rounded-md border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 sm:flex">
-                <span className="text-[11px] uppercase tracking-wider text-emerald-200/80">
-                  Knowledge Health
+                <span className="text-xs text-emerald-200/80">
+                  Doc coverage
                 </span>
                 <span className="font-[family-name:var(--font-display)] text-lg text-emerald-300">
                   {health}%

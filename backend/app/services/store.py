@@ -1,4 +1,4 @@
-"""Seeded industrial knowledge store for ForgeMind AI demo."""
+"""In-memory sample plant data used for local runs."""
 
 from __future__ import annotations
 
@@ -400,7 +400,7 @@ class KnowledgeStore:
         self.notifications = [
             {"id": "n1", "type": "conflict", "message": "Pressure conflict detected on P-102", "ts": "2025-03-02T10:00:00"},
             {"id": "n2", "type": "maintenance", "message": "P-102 maintenance due in 12 days", "ts": "2025-07-01T08:00:00"},
-            {"id": "n3", "type": "health", "message": "Knowledge Health decreased after compliance finding", "ts": "2025-03-02T11:00:00"},
+            {"id": "n3", "type": "health", "message": "Doc coverage dropped after compliance finding", "ts": "2025-03-02T11:00:00"},
             {"id": "n4", "type": "gap", "message": "Missing vibration report for P-102", "ts": "2025-03-03T09:00:00"},
         ]
         self.graph_stats = {"nodes": len(self.nodes), "edges": len(self.edges)}

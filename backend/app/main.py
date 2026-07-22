@@ -24,6 +24,6 @@ app.include_router(router, prefix=settings.api_prefix)
 async def root():
     return {
         "name": "ForgeMind AI",
-        "tagline": "Ask Anything About Your Plant.",
+        "description": "Ask questions about plant equipment and documents.",
         "docs": "/docs",
     }

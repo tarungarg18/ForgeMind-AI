@@ -30,7 +30,7 @@ export default function UploadPage() {
       <div>
         <h1 className="font-[family-name:var(--font-display)] text-3xl text-white">Upload</h1>
         <p className="text-slate-400">
-          Heterogeneous ingestion with live knowledge graph growth
+          Add plant documents. The graph updates as files are processed.
         </p>
       </div>
 
@@ -42,10 +42,10 @@ export default function UploadPage() {
           onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
         />
         <div className="font-[family-name:var(--font-display)] text-xl text-white">
-          Drop industrial documents
+          Drop files here
         </div>
         <p className="mt-2 text-sm text-slate-400">
-          PDF · Word · Excel · Images · Email (.eml)
+          PDF, Word, Excel, images, or .eml
         </p>
         {busy && <p className="mt-4 text-cyan-300">Processing {filename}…</p>}
       </label>
@@ -70,7 +70,7 @@ export default function UploadPage() {
           </div>
           <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
             <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-              Live Knowledge Graph Growth
+              Graph growth
             </h3>
             <div className="mt-6 grid grid-cols-2 gap-4">
               <div>
@@ -87,7 +87,7 @@ export default function UploadPage() {
               </div>
             </div>
             <p className="mt-4 text-sm text-slate-300">
-              Relations upsert continuously as documents arrive — the plant brain never goes stale.
+              New nodes and links get added when a document finishes processing.
             </p>
           </div>
         </div>

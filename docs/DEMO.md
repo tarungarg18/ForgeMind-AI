@@ -1,21 +1,17 @@
-# Demo Script — ForgeMind AI (3–4 min)
+# Demo walkthrough
 
-## One-click path
+## Fast path
+
 Insights → **Run Demo**
 
-## Manual path (backup)
+## Manual path
 
-1. **Upload** — drop any PDF/TXT; watch Nodes/Edges grow live  
-2. **Knowledge Base** — Plant Twin → click **P-102** (red)  
-3. Open **Digital Memory Timeline** (2021→2025) → open a source doc  
-4. **ForgeMind AI** — context banner shows P-102; ask *Why did Pump P-102 fail?*  
-5. Show **Decision Card** + Evidence Heatmap + Explain Why  
-6. Ask *Why wasn't this incident predicted?* → gaps / missing vibration report  
-7. Optional: *What happens if maintenance is postponed?* → Simulator  
-8. **Insights** — Conflicts (120/140/150 PSI) → Knowledge Health Score  
+1. Upload a file and watch the graph counts update
+2. Knowledge Base → click **P-102**
+3. Check the timeline and open a linked document
+4. ForgeMind AI → ask `Why did Pump P-102 fail?`
+5. Look at the recommended action and sources
+6. Ask `Why wasn't this incident predicted?`
+7. Insights → conflicts + knowledge health
 
-## Talking points
-- Decision Intelligence, not document chat  
-- Agents hidden; one ForgeMind assistant  
-- Trust-ranked RAG + conflict detection  
-- OpenRouter-powered generation with seeded demo fallback  
+That's enough to show the flow.

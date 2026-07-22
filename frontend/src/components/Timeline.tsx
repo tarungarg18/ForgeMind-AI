@@ -10,9 +10,9 @@ export function Timeline({
   return (
     <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
       <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-        Digital Memory Timeline
+        Equipment timeline
       </h3>
-      <p className="mb-4 text-sm text-slate-400">Git history for this industrial asset</p>
+      <p className="mb-4 text-sm text-slate-400">Past events linked to source documents</p>
       <div className="relative ml-3 space-y-0 border-l border-cyan-500/30 pl-6">
         {events.map((ev, idx) => (
           <div key={ev.id} className="relative pb-6">

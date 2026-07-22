@@ -109,14 +109,14 @@ export default function AIPage() {
           ForgeMind AI
         </h1>
         <p className="text-slate-400">
-          One assistant · Decision Cards · Contextual Copilot · Explain Why
+          Ask about equipment. Answers include sources and a next step.
         </p>
       </div>
 
       {ctx && (
         <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
-          <div className="text-[11px] uppercase tracking-[0.18em] text-cyan-300/80">
-            Context locked
+          <div className="text-xs text-cyan-300/80">
+            Looking at
           </div>
           <div className="mt-2 grid gap-3 text-sm text-slate-200 sm:grid-cols-4">
             <div>Equipment<br /><span className="text-white">{ctx.tag} · {ctx.name}</span></div>
@@ -166,7 +166,7 @@ export default function AIPage() {
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && ask()}
                 className="flex-1 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/40"
-                placeholder="Ask a decision question…"
+                placeholder="Ask a question…"
               />
               <button
                 onClick={() => ask()}
@@ -193,14 +193,14 @@ export default function AIPage() {
           {response && (
             <div className="space-y-4">
               <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4 text-slate-200">
-                <div className="text-[11px] uppercase tracking-wider text-slate-500">Answer · {response.mode}</div>
+                <div className="text-xs text-slate-500">Answer ({response.mode})</div>
                 <p className="mt-2 leading-relaxed">{response.answer}</p>
               </div>
               <DecisionCardView card={response.decision_card} onFollowup={onFollowup} />
               {response.explain && (
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-                    <h4 className="text-sm font-medium text-white">Explain Why</h4>
+                    <h4 className="text-sm font-medium text-white">How we got here</h4>
                     <ul className="mt-2 space-y-1 text-sm text-slate-300">
                       {(response.explain.reasoning_path || []).map((r: string) => (
                         <li key={r}>→ {r}</li>
@@ -224,7 +224,7 @@ export default function AIPage() {
           {sim && (
             <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4">
               <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-                Decision Simulator
+                What if we postpone maintenance?
               </h3>
               <div className="mt-3 space-y-2">
                 {sim.steps.map((s: any) => (
@@ -242,7 +242,7 @@ export default function AIPage() {
 
         <div className="space-y-4 lg:col-span-5">
           <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-            <h3 className="text-sm font-medium text-white">Impact Radius / Graph</h3>
+            <h3 className="text-sm font-medium text-white">Connected items</h3>
             <div className="mt-3 flex flex-wrap gap-2">
               {(response?.impact_radius || ctx?.impact_radius || []).map((x: string) => (
                 <span key={x} className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-200">

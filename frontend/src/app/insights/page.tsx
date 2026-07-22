@@ -48,7 +48,7 @@ export default function InsightsPage() {
         <div>
           <h1 className="font-[family-name:var(--font-display)] text-3xl text-white">Insights</h1>
           <p className="text-slate-400">
-            Knowledge Health · Recommendations · Conflicts · Demo Mode
+            Health score, open issues, and a quick walkthrough
           </p>
         </div>
         <button
@@ -63,11 +63,11 @@ export default function InsightsPage() {
       {health && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
           {[
-            ["Knowledge Health", `${health.knowledge_health}%`],
+            ["Overall", `${health.knowledge_health}%`],
             ["Coverage", `${health.coverage}%`],
             ["Compliance", `${health.compliance}%`],
-            ["Missing Docs", health.missing_documents],
-            ["Critical Gaps", health.critical_gaps],
+            ["Missing docs", health.missing_documents],
+            ["Critical gaps", health.critical_gaps],
             ["Freshness", `${health.knowledge_freshness}%`],
           ].map(([label, value]) => (
             <div key={label as string} className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
@@ -81,7 +81,7 @@ export default function InsightsPage() {
       {demo && (
         <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4">
           <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-            Interactive Demo Mode
+            Walkthrough
           </h3>
           <ol className="mt-3 space-y-2">
             {demo.beats.map((b: any) => (
@@ -102,7 +102,7 @@ export default function InsightsPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
           <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-            AI Recommendations Queue
+            Suggested work
           </h3>
           <div className="mt-3 space-y-2">
             {recs.map((r) => (
@@ -129,7 +129,7 @@ export default function InsightsPage() {
 
         <div className="space-y-4">
           <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
-            <h3 className="text-sm font-medium text-white">Cross-document Conflicts</h3>
+            <h3 className="text-sm font-medium text-white">Document conflicts</h3>
             {conflicts.map((c) => (
               <div key={c.id} className="mt-3 text-sm text-red-100">
                 <div className="font-medium">{c.entity} · {c.field}</div>
@@ -145,7 +145,7 @@ export default function InsightsPage() {
             ))}
           </div>
           <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-            <h3 className="text-sm font-medium text-white">Knowledge Gaps / Drift</h3>
+            <h3 className="text-sm font-medium text-white">Missing docs</h3>
             <div className="mt-2 space-y-2">
               {gaps.map((g) => (
                 <div key={g.id} className="text-sm text-amber-100">
@@ -160,13 +160,13 @@ export default function InsightsPage() {
       <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
         <div className="flex items-center justify-between gap-3">
           <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-            Enterprise Search Comparison
+            Search vs ForgeMind
           </h3>
           <button
             onClick={runCompare}
             className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-200"
           >
-            Compare time-to-answer
+            Compare
           </button>
         </div>
         {compare && (
@@ -197,7 +197,7 @@ export default function InsightsPage() {
         <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-              Auto Incident Story
+              Incident summary
             </h3>
             <a
               href={api.incidentPdfUrl}

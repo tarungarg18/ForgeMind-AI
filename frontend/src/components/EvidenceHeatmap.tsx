@@ -5,7 +5,7 @@ export function EvidenceHeatmap({ items }: { items: any[] }) {
   const max = Math.max(...items.map((i) => i.weight || 0), 1);
   return (
     <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-      <h4 className="text-sm font-medium text-white">Evidence Heatmap</h4>
+      <h4 className="text-sm font-medium text-white">Sources used</h4>
       <div className="mt-3 space-y-2">
         {items.map((item) => (
           <div key={item.document_id}>

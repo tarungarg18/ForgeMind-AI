@@ -12,8 +12,8 @@ export function DecisionCardView({
   return (
     <div className="overflow-hidden rounded-xl border border-cyan-400/30 bg-gradient-to-br from-cyan-950/50 to-slate-950/80 shadow-[0_0_0_1px_rgba(34,211,238,0.08)]">
       <div className="border-b border-white/10 px-4 py-3">
-        <div className="text-[11px] uppercase tracking-[0.2em] text-cyan-300/80">
-          Enterprise Decision Center
+        <div className="text-xs text-cyan-300/80">
+          Suggested action
         </div>
         <h3 className="mt-1 font-[family-name:var(--font-display)] text-xl text-white">
           {card.recommended_action}

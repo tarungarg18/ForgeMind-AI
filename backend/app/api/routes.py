@@ -153,12 +153,12 @@ async def search_compare(q: str) -> dict[str, Any]:
         "query": q,
         "traditional": {
             "seconds": 180,
-            "label": "Traditional Search ~3 min",
+            "label": "Folder search (~3 min)",
             "hits": traditional_hits[:5] or [{"title": "Folder crawl...", "snippet": "No ranked answer"}],
         },
         "forgemind": {
             "seconds": 8,
-            "label": "ForgeMind ~8 sec",
+            "label": "ForgeMind (~8 sec)",
             "answer": fm_answer.answer,
             "citations": fm_answer.explain.documents_used if fm_answer.explain else [],
             "decision_card": fm_answer.decision_card.model_dump() if fm_answer.decision_card else None,
@@ -248,20 +248,20 @@ async def upload_status(job_id: str) -> dict[str, Any]:
 
 @router.post("/demo/run")
 async def run_demo() -> dict[str, Any]:
-    """Interactive Demo Mode — scripted beats for judges."""
+    """Walk through the main product flow with sample data."""
     beats = []
-    beats.append({"beat": 1, "title": "Upload", "detail": "Mixed industrial documents ingested"})
+    beats.append({"beat": 1, "title": "Upload", "detail": "Sample plant documents loaded"})
     await asyncio.sleep(0.05)
-    beats.append({"beat": 2, "title": "Live Graph Growth", "detail": f"Nodes {store.graph_stats['nodes']} · Edges {store.graph_stats['edges']}"})
-    beats.append({"beat": 3, "title": "Plant Twin", "detail": "P-102 critical on Section A map"})
-    beats.append({"beat": 4, "title": "Digital Memory Timeline", "detail": "2021–2025 memory opened for P-102"})
+    beats.append({"beat": 2, "title": "Graph update", "detail": f"Nodes {store.graph_stats['nodes']}, edges {store.graph_stats['edges']}"})
+    beats.append({"beat": 3, "title": "Plant map", "detail": "P-102 marked critical in Section A"})
+    beats.append({"beat": 4, "title": "Timeline", "detail": "History for P-102 from 2021 to 2025"})
     chat = await answer_query(ChatRequest(message="Why did Pump P-102 fail?", mode="manager", equipment_id="eq-p102"))
-    beats.append({"beat": 5, "title": "Decision Card", "detail": chat.decision_card.recommended_action if chat.decision_card else ""})
-    beats.append({"beat": 6, "title": "Conflict + Ask Why Not", "detail": store.conflicts[0].summary})
+    beats.append({"beat": 5, "title": "Recommended action", "detail": chat.decision_card.recommended_action if chat.decision_card else ""})
+    beats.append({"beat": 6, "title": "Document conflict", "detail": store.conflicts[0].summary})
     why = await answer_query(ChatRequest(message="Why wasn't this incident predicted?", mode="auditor", equipment_id="eq-p102"))
-    beats.append({"beat": 7, "title": "Knowledge Gaps", "detail": why.answer[:160]})
+    beats.append({"beat": 7, "title": "Missing docs", "detail": why.answer[:160]})
     kh = store.knowledge_health()
-    beats.append({"beat": 8, "title": "Knowledge Health Score", "detail": f"{kh.knowledge_health}% health · {kh.critical_gaps} critical gaps"})
+    beats.append({"beat": 8, "title": "Knowledge health", "detail": f"{kh.knowledge_health}% overall, {kh.critical_gaps} critical gaps"})
     return {"beats": beats, "knowledge_health": kh.model_dump(), "decision": chat.model_dump()}
 
 

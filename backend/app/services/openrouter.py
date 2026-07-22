@@ -1,4 +1,4 @@
-"""OpenRouter LLM client — OpenAI-compatible API."""
+"""Thin OpenRouter client (OpenAI-compatible)."""
 
 from __future__ import annotations
 

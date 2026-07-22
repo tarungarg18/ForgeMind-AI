@@ -1,21 +1,19 @@
-# Architecture — ForgeMind AI (PS 8)
+# Architecture
 
-## Surfaces (external)
+Simple layout:
 
-Upload → Knowledge Base (Plant Twin) → ForgeMind AI → Insights
+```
+Upload → Knowledge Base → ForgeMind AI → Insights
+```
 
-## Internal flow
+## How it works
 
-1. Ingest documents → trust score + entity/graph upsert + gap/conflict scan
-2. User selects asset on Plant Twin → Contextual Copilot session
-3. LangGraph-style supervisor routes to internal specialists (hidden)
-4. OpenRouter LLM composes answer + **Decision Card**
-5. Explain Why + Evidence Heatmap + Impact Radius from graph
+1. Documents get parsed and stored with a trust score
+2. Equipment, events, and links go into a knowledge graph
+3. When you pick an asset, chat keeps that context
+4. Questions go through OpenRouter (or sample answers if no API key)
+5. Responses include sources, a recommended action, and related equipment
 
-## LLM
+## Data
 
-All generative calls go through **OpenRouter** (`OPENROUTER_BASE_URL` + `OPENROUTER_API_KEY`).
-
-## Demo corpus
-
-Seeded Pump P-102 history 2021–2025 with intentional pressure conflicts (120/140/150 PSI).
+Local demo ships with sample docs around pump P-102 (2021–2025), including a pressure mismatch between the manual and later reports.

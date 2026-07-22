@@ -35,7 +35,7 @@ export default function KnowledgePage() {
           <h1 className="font-[family-name:var(--font-display)] text-3xl text-white">
             Knowledge Base
           </h1>
-          <p className="text-slate-400">Plant Twin · Digital Memory · Smart Search</p>
+          <p className="text-slate-400">Plant map, equipment history, and search</p>
         </div>
         <div className="flex gap-2">
           <input
@@ -78,7 +78,7 @@ export default function KnowledgePage() {
                 <div>Maintenance Due<br /><span className="text-white">{detail.maintenance_due_days} days</span></div>
               </div>
               <div className="mt-4">
-                <div className="text-xs uppercase tracking-wider text-slate-500">Impact Radius</div>
+              <div className="text-xs text-slate-500">Related equipment / impact</div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {(detail.impact_radius || []).map((x: string) => (
                     <span key={x} className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-200">
@@ -91,11 +91,11 @@ export default function KnowledgePage() {
                 href="/ai"
                 className="mt-4 inline-flex rounded-md bg-cyan-500 px-3 py-2 text-sm font-medium text-slate-950"
               >
-                Open Contextual Copilot →
+                Ask about this equipment →
               </Link>
             </div>
             <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-              <h3 className="text-sm font-medium text-white">Knowledge Gaps</h3>
+              <h3 className="text-sm font-medium text-white">Missing documents</h3>
               <div className="mt-2 space-y-2">
                 {(detail.gaps || []).map((g: any) => (
                   <div key={g.id} className="rounded-md border border-amber-400/20 bg-amber-400/5 p-2 text-sm text-amber-100">
@@ -146,7 +146,7 @@ export default function KnowledgePage() {
       {search && (
         <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
           <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-            Smart Search — Knowledge, not just PDFs
+            Search results
           </h3>
           <div className="mt-4 grid gap-3 md:grid-cols-3 lg:grid-cols-6">
             {Object.entries(search).map(([facet, items]: any) => (
