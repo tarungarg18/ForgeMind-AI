@@ -276,63 +276,63 @@ def _equipment() -> list[Equipment]:
 
 def _events() -> list[AssetEvent]:
     return [
-        AssetEvent("ev-1", "eq-p102", "2021-03-12", "installed", "Pump P-102 installed and commissioned", "doc-manual-p102", "info"),
-        AssetEvent("ev-2", "eq-p102", "2022-05-04", "maintenance", "Scheduled lubrication and alignment check", "doc-sop-cooling", "info"),
-        AssetEvent("ev-3", "eq-p102", "2023-06-18", "seal_leakage", "Seal leakage observed; pressure 150 PSI", "doc-insp-p102-2023", "warning"),
-        AssetEvent("ev-4", "eq-p102", "2023-07-02", "inspection", "Follow-up inspection after seal leak", "doc-insp-p102-2023", "info"),
-        AssetEvent("ev-5", "eq-p102", "2024-02-09", "bearing_replacement", "Drive-end bearing replaced (WO-8841)", "doc-maint-p102-2024", "warning"),
-        AssetEvent("ev-6", "eq-p102", "2025-01-14", "near_miss", "Cooling line surge near miss NM-221", "doc-incident-p102-2025", "critical"),
-        AssetEvent("ev-7", "eq-p102", "2025-03-02", "compliance_issue", "OISD evidence gap CF-77 logged", "doc-compliance-p102", "critical"),
-        AssetEvent("ev-8", "eq-v12", "2022-08-01", "installed", "Valve V-12 installed", "doc-sop-cooling", "info"),
-        AssetEvent("ev-9", "eq-v12", "2025-01-14", "near_miss", "Involved in cooling line surge", "doc-incident-p102-2025", "critical"),
-        AssetEvent("ev-10", "eq-c8", "2023-11-20", "bearing_wear", "Compressor bearing wear event", "doc-comp-failures", "warning"),
+        AssetEvent(id="ev-1", equipment_id="eq-p102", date="2021-03-12", event_type="installed", summary="Pump P-102 installed and commissioned", document_id="doc-manual-p102", severity="info"),
+        AssetEvent(id="ev-2", equipment_id="eq-p102", date="2022-05-04", event_type="maintenance", summary="Scheduled lubrication and alignment check", document_id="doc-sop-cooling", severity="info"),
+        AssetEvent(id="ev-3", equipment_id="eq-p102", date="2023-06-18", event_type="seal_leakage", summary="Seal leakage observed; pressure 150 PSI", document_id="doc-insp-p102-2023", severity="warning"),
+        AssetEvent(id="ev-4", equipment_id="eq-p102", date="2023-07-02", event_type="inspection", summary="Follow-up inspection after seal leak", document_id="doc-insp-p102-2023", severity="info"),
+        AssetEvent(id="ev-5", equipment_id="eq-p102", date="2024-02-09", event_type="bearing_replacement", summary="Drive-end bearing replaced (WO-8841)", document_id="doc-maint-p102-2024", severity="warning"),
+        AssetEvent(id="ev-6", equipment_id="eq-p102", date="2025-01-14", event_type="near_miss", summary="Cooling line surge near miss NM-221", document_id="doc-incident-p102-2025", severity="critical"),
+        AssetEvent(id="ev-7", equipment_id="eq-p102", date="2025-03-02", event_type="compliance_issue", summary="OISD evidence gap CF-77 logged", document_id="doc-compliance-p102", severity="critical"),
+        AssetEvent(id="ev-8", equipment_id="eq-v12", date="2022-08-01", event_type="installed", summary="Valve V-12 installed", document_id="doc-sop-cooling", severity="info"),
+        AssetEvent(id="ev-9", equipment_id="eq-v12", date="2025-01-14", event_type="near_miss", summary="Involved in cooling line surge", document_id="doc-incident-p102-2025", severity="critical"),
+        AssetEvent(id="ev-10", equipment_id="eq-c8", date="2023-11-20", event_type="bearing_wear", summary="Compressor bearing wear event", document_id="doc-comp-failures", severity="warning"),
     ]
 
 
 def _nodes() -> list[GraphNode]:
     nodes = [
-        GraphNode("eq-p102", "Pump P-102", "equipment", {"status": "critical"}),
-        GraphNode("eq-v12", "Valve V-12", "equipment", {"status": "critical"}),
-        GraphNode("eq-b3", "Boiler B-3", "equipment", {"status": "warning"}),
-        GraphNode("eq-c8", "Compressor C-8", "equipment", {"status": "healthy"}),
-        GraphNode("line-cooling", "Cooling Line", "process", {}),
-        GraphNode("line-prod", "Production Line", "process", {}),
-        GraphNode("dept-cooling", "Cooling Dept", "department", {}),
-        GraphNode("reg-oisd", "OISD", "regulation", {}),
-        GraphNode("reg-fa", "Factories Act", "regulation", {}),
-        GraphNode("reg-peso", "PESO", "regulation", {}),
+        GraphNode(id="eq-p102", label="Pump P-102", kind="equipment", meta={"status": "critical"}),
+        GraphNode(id="eq-v12", label="Valve V-12", kind="equipment", meta={"status": "critical"}),
+        GraphNode(id="eq-b3", label="Boiler B-3", kind="equipment", meta={"status": "warning"}),
+        GraphNode(id="eq-c8", label="Compressor C-8", kind="equipment", meta={"status": "healthy"}),
+        GraphNode(id="line-cooling", label="Cooling Line", kind="process", meta={}),
+        GraphNode(id="line-prod", label="Production Line", kind="process", meta={}),
+        GraphNode(id="dept-cooling", label="Cooling Dept", kind="department", meta={}),
+        GraphNode(id="reg-oisd", label="OISD", kind="regulation", meta={}),
+        GraphNode(id="reg-fa", label="Factories Act", kind="regulation", meta={}),
+        GraphNode(id="reg-peso", label="PESO", kind="regulation", meta={}),
     ]
     for d in _docs():
-        nodes.append(GraphNode(d.id, d.title, "document", {"trust": d.trust_score}))
+        nodes.append(GraphNode(id=d.id, label=d.title, kind="document", meta={"trust": d.trust_score}))
     for e in _events():
-        nodes.append(GraphNode(e.id, e.summary[:40], "event", {"date": e.date, "type": e.event_type}))
+        nodes.append(GraphNode(id=e.id, label=e.summary[:40], kind="event", meta={"date": e.date, "type": e.event_type}))
     return nodes
 
 
 def _edges() -> list[GraphEdge]:
     return [
-        GraphEdge("e1", "eq-p102", "eq-v12", "CONNECTED_TO", 0.97),
-        GraphEdge("e2", "eq-v12", "line-cooling", "FEEDS", 0.94),
-        GraphEdge("e3", "line-cooling", "eq-c8", "SUPPORTS", 0.88),
-        GraphEdge("e4", "eq-c8", "line-prod", "FEEDS", 0.91),
-        GraphEdge("e5", "eq-p102", "dept-cooling", "OWNED_BY", 0.99),
-        GraphEdge("e6", "eq-p102", "doc-manual-p102", "DESCRIBED_BY", 0.96),
-        GraphEdge("e7", "eq-p102", "doc-insp-p102-2023", "INSPECTED_IN", 0.93),
-        GraphEdge("e8", "eq-p102", "doc-maint-p102-2024", "MAINTAINED_IN", 0.9),
-        GraphEdge("e9", "eq-p102", "doc-incident-p102-2025", "INCIDENT_IN", 0.95),
-        GraphEdge("e10", "eq-p102", "doc-compliance-p102", "FLAGGED_IN", 0.87),
-        GraphEdge("e11", "doc-incident-p102-2025", "eq-v12", "INVOLVES", 0.92),
-        GraphEdge("e12", "eq-p102", "reg-oisd", "SUBJECT_TO", 0.85),
-        GraphEdge("e13", "eq-p102", "reg-fa", "SUBJECT_TO", 0.9),
-        GraphEdge("e14", "eq-p102", "reg-peso", "SUBJECT_TO", 0.84),
-        GraphEdge("e15", "ev-3", "eq-p102", "OCCURRED_ON", 0.99),
-        GraphEdge("e16", "ev-6", "eq-p102", "OCCURRED_ON", 0.99),
-        GraphEdge("e17", "ev-5", "doc-maint-p102-2024", "DOCUMENTED_IN", 0.94),
-        GraphEdge("e18", "doc-insp-p102-2023", "doc-manual-p102", "CONFLICTS_WITH", 0.78),
-        GraphEdge("e19", "doc-maint-p102-2024", "doc-manual-p102", "CONFLICTS_WITH", 0.72),
-        GraphEdge("e20", "eq-c8", "doc-comp-failures", "LESSONS_IN", 0.89),
-        GraphEdge("e21", "line-cooling", "line-prod", "IMPACTS", 0.8),
-        GraphEdge("e22", "eq-b3", "line-prod", "SUPPORTS", 0.7),
+        GraphEdge(id="e1", source="eq-p102", target="eq-v12", relation="CONNECTED_TO", confidence=0.97),
+        GraphEdge(id="e2", source="eq-v12", target="line-cooling", relation="FEEDS", confidence=0.94),
+        GraphEdge(id="e3", source="line-cooling", target="eq-c8", relation="SUPPORTS", confidence=0.88),
+        GraphEdge(id="e4", source="eq-c8", target="line-prod", relation="FEEDS", confidence=0.91),
+        GraphEdge(id="e5", source="eq-p102", target="dept-cooling", relation="OWNED_BY", confidence=0.99),
+        GraphEdge(id="e6", source="eq-p102", target="doc-manual-p102", relation="DESCRIBED_BY", confidence=0.96),
+        GraphEdge(id="e7", source="eq-p102", target="doc-insp-p102-2023", relation="INSPECTED_IN", confidence=0.93),
+        GraphEdge(id="e8", source="eq-p102", target="doc-maint-p102-2024", relation="MAINTAINED_IN", confidence=0.9),
+        GraphEdge(id="e9", source="eq-p102", target="doc-incident-p102-2025", relation="INCIDENT_IN", confidence=0.95),
+        GraphEdge(id="e10", source="eq-p102", target="doc-compliance-p102", relation="FLAGGED_IN", confidence=0.87),
+        GraphEdge(id="e11", source="doc-incident-p102-2025", target="eq-v12", relation="INVOLVES", confidence=0.92),
+        GraphEdge(id="e12", source="eq-p102", target="reg-oisd", relation="SUBJECT_TO", confidence=0.85),
+        GraphEdge(id="e13", source="eq-p102", target="reg-fa", relation="SUBJECT_TO", confidence=0.9),
+        GraphEdge(id="e14", source="eq-p102", target="reg-peso", relation="SUBJECT_TO", confidence=0.84),
+        GraphEdge(id="e15", source="ev-3", target="eq-p102", relation="OCCURRED_ON", confidence=0.99),
+        GraphEdge(id="e16", source="ev-6", target="eq-p102", relation="OCCURRED_ON", confidence=0.99),
+        GraphEdge(id="e17", source="ev-5", target="doc-maint-p102-2024", relation="DOCUMENTED_IN", confidence=0.94),
+        GraphEdge(id="e18", source="doc-insp-p102-2023", target="doc-manual-p102", relation="CONFLICTS_WITH", confidence=0.78),
+        GraphEdge(id="e19", source="doc-maint-p102-2024", target="doc-manual-p102", relation="CONFLICTS_WITH", confidence=0.72),
+        GraphEdge(id="e20", source="eq-c8", target="doc-comp-failures", relation="LESSONS_IN", confidence=0.89),
+        GraphEdge(id="e21", source="line-cooling", target="line-prod", relation="IMPACTS", confidence=0.8),
+        GraphEdge(id="e22", source="eq-b3", target="line-prod", relation="SUPPORTS", confidence=0.7),
     ]
 
 
@@ -374,11 +374,11 @@ def _gaps() -> list[KnowledgeGap]:
 
 def _recommendations() -> list[Recommendation]:
     return [
-        Recommendation("rec-1", "HIGH", "Replace mechanical seal on P-102", "Seal leakage history + pressure conflict elevates failure risk.", "eq-p102", "maintenance"),
-        Recommendation("rec-2", "MEDIUM", "Upload vibration report for P-102", "Critical knowledge gap blocking predictive coverage.", "eq-p102", "documentation"),
-        Recommendation("rec-3", "MEDIUM", "Reconcile pressure conflict (120/140/150 PSI)", "Cross-document conflict undermines operating envelope trust.", "eq-p102", "compliance"),
-        Recommendation("rec-4", "LOW", "Archive superseded 2019 inspection", "Trust score 41%; superseded and unsigned.", "eq-p102", "governance"),
-        Recommendation("rec-5", "HIGH", "Schedule compressor bearing PM cadence review", "Lessons pack shows bearing wear as dominant failure mode.", "eq-c8", "maintenance"),
+        Recommendation(id="rec-1", priority="HIGH", title="Replace mechanical seal on P-102", detail="Seal leakage history + pressure conflict elevates failure risk.", equipment_id="eq-p102", action_type="maintenance"),
+        Recommendation(id="rec-2", priority="MEDIUM", title="Upload vibration report for P-102", detail="Critical knowledge gap blocking predictive coverage.", equipment_id="eq-p102", action_type="documentation"),
+        Recommendation(id="rec-3", priority="MEDIUM", title="Reconcile pressure conflict (120/140/150 PSI)", detail="Cross-document conflict undermines operating envelope trust.", equipment_id="eq-p102", action_type="compliance"),
+        Recommendation(id="rec-4", priority="LOW", title="Archive superseded 2019 inspection", detail="Trust score 41%; superseded and unsigned.", equipment_id="eq-p102", action_type="governance"),
+        Recommendation(id="rec-5", priority="HIGH", title="Schedule compressor bearing PM cadence review", detail="Lessons pack shows bearing wear as dominant failure mode.", equipment_id="eq-c8", action_type="maintenance"),
     ]
 
 
