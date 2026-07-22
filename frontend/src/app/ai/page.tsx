@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
-import { useEquipment } from "@/components/EquipmentContext";
 import { DecisionCardView } from "@/components/DecisionCard";
 import { EvidenceHeatmap } from "@/components/EvidenceHeatmap";
 
@@ -21,42 +20,44 @@ const SUGGESTIONS = [
   "Why wasn't this incident predicted?",
   "What did we learn from compressor failures?",
   "Show everything connected to Pump P-102",
-  "What happens if maintenance is postponed?",
+  "What happens if maintenance is postponed for P-102?",
+  "Are there compliance gaps for cooling equipment?",
 ];
 
+function inferEquipmentId(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("v-12") || lower.includes("valve")) return "eq-v12";
+  if (lower.includes("c-8") || lower.includes("compressor")) return "eq-c8";
+  if (lower.includes("b-3") || lower.includes("boiler")) return "eq-b3";
+  return "eq-p102";
+}
+
 export default function AIPage() {
-  const { equipmentId } = useEquipment();
   const [mode, setMode] = useState("manager");
   const [message, setMessage] = useState("Why did Pump P-102 fail?");
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<any>(null);
-  const [ctx, setCtx] = useState<any>(null);
   const [sim, setSim] = useState<any>(null);
   const [graph, setGraph] = useState<any>(null);
-
-  useEffect(() => {
-    if (!equipmentId) return;
-    api.equipmentDetail(equipmentId).then(setCtx).catch(console.error);
-    api.graph(equipmentId).then(setGraph).catch(console.error);
-  }, [equipmentId]);
 
   async function ask(text?: string) {
     const msg = text || message;
     setLoading(true);
     setSim(null);
     try {
-      if (msg.toLowerCase().includes("postponed") || msg.toLowerCase().includes("postpone")) {
-        const s = await api.simulate(equipmentId || "eq-p102");
-        setSim(s);
+      const inferred = inferEquipmentId(msg);
+      if (msg.toLowerCase().includes("postpon") || msg.toLowerCase().includes("simulator")) {
+        setSim(await api.simulate(inferred));
       }
       const res = await api.chat({
         message: msg,
         mode,
-        equipment_id: equipmentId,
+        equipment_id: null,
       });
       setResponse(res);
-      if (msg.toLowerCase().includes("connected")) {
-        setGraph(await api.graph(equipmentId || "eq-p102"));
+      const related = res.context_equipment_id || inferred;
+      if (msg.toLowerCase().includes("connected") || res.impact_radius?.length) {
+        setGraph(await api.graph(related));
       }
     } finally {
       setLoading(false);
@@ -65,7 +66,8 @@ export default function AIPage() {
 
   async function onFollowup(action: string) {
     if (action === "Run Simulator") {
-      setSim(await api.simulate(equipmentId || "eq-p102"));
+      const id = response?.context_equipment_id || inferEquipmentId(message);
+      setSim(await api.simulate(id));
       return;
     }
     if (action === "View Timeline") {
@@ -92,7 +94,7 @@ export default function AIPage() {
         const res = await api.chat({
           message: "What is this valve?",
           mode,
-          equipment_id: "eq-v12",
+          equipment_id: null,
           image_b64: b64,
         });
         setResponse(res);
@@ -108,33 +110,10 @@ export default function AIPage() {
       <header>
         <h1 className="text-2xl font-semibold text-gray-900">Ask AI</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Ask a question about the selected machine. You get an answer, sources, and a suggested action.
+          Ask any plant question. Mention equipment in the question when needed (for example P-102).
+          You do not need to select equipment first.
         </p>
       </header>
-
-      {ctx && (
-        <div className="fm-card bg-teal-50 p-4 ring-teal-100">
-          <div className="fm-label text-teal-800">Currently selected</div>
-          <div className="mt-2 grid gap-3 text-sm sm:grid-cols-4">
-            <div>
-              <div className="text-gray-500">Equipment</div>
-              <div className="font-medium text-gray-900">{ctx.tag} · {ctx.name}</div>
-            </div>
-            <div>
-              <div className="text-gray-500">Department</div>
-              <div className="font-medium text-gray-900">{ctx.department}</div>
-            </div>
-            <div>
-              <div className="text-gray-500">Open incidents</div>
-              <div className="font-medium text-gray-900">{ctx.open_incidents}</div>
-            </div>
-            <div>
-              <div className="text-gray-500">Maintenance due</div>
-              <div className="font-medium text-gray-900">{ctx.maintenance_due_days} days</div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <section className="space-y-3">
         <div>
@@ -145,6 +124,7 @@ export default function AIPage() {
           {MODES.map((m) => (
             <button
               key={m.id}
+              type="button"
               onClick={() => setMode(m.id)}
               className={`rounded-md px-3 py-1.5 text-sm ${
                 mode === m.id
@@ -185,7 +165,7 @@ export default function AIPage() {
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && ask()}
               className="flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
-              placeholder="Ask a question…"
+              placeholder="e.g. Why did Pump P-102 fail?"
             />
             <button
               type="button"
@@ -217,8 +197,8 @@ export default function AIPage() {
           <div className="text-sm font-semibold text-gray-900">3. Answer & suggested action</div>
           <p className="text-xs text-gray-500">
             {response
-              ? "Plain answer, then suggested action and sources"
-              : "Ask a question above — the answer and next step will appear in this area"}
+              ? "Answer, next step, and sources"
+              : "Ask a question above — results show here"}
           </p>
         </div>
 
@@ -281,44 +261,51 @@ export default function AIPage() {
         </section>
       )}
 
-      <section className="space-y-3">
-        <div>
-          <div className="text-sm font-semibold text-gray-900">Connected items</div>
-          <p className="text-xs text-gray-500">Nearby equipment and links from the graph</p>
-        </div>
-        <div className="fm-card p-4">
-          <div className="flex flex-wrap gap-2">
-            {(response?.impact_radius || ctx?.impact_radius || []).map((x: string) => (
-              <span key={x} className="rounded-md bg-gray-50 px-2 py-1 text-xs text-gray-700 ring-1 ring-gray-200">
-                {x}
-              </span>
-            ))}
+      {(response?.impact_radius?.length > 0 || graph) && (
+        <section className="space-y-3">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">Related items</div>
+            <p className="text-xs text-gray-500">Pulled from the answer when equipment is mentioned</p>
           </div>
-          {graph && (
-            <div className="mt-4 max-h-56 space-y-1 overflow-auto text-xs text-gray-600">
-              {graph.edges?.slice(0, 20).map((e: any) => (
-                <div key={e.id}>
-                  {e.source} --{(e.confidence * 100).toFixed(0)}%--&gt; {e.target}
-                  <span className="text-gray-400"> ({e.relation})</span>
-                </div>
+          <div className="fm-card p-4">
+            <div className="flex flex-wrap gap-2">
+              {(response?.impact_radius || []).map((x: string) => (
+                <span
+                  key={x}
+                  className="rounded-md bg-gray-50 px-2 py-1 text-xs text-gray-700 ring-1 ring-gray-200"
+                >
+                  {x}
+                </span>
               ))}
             </div>
-          )}
-          {response?.explain?.documents_used && (
-            <div className="mt-4 border-t border-gray-100 pt-3">
-              <div className="fm-label">Documents used</div>
-              <div className="mt-2 space-y-1 text-sm text-gray-700">
-                {response.explain.documents_used.map((d: any) => (
-                  <div key={d.id}>
-                    {d.title}
-                    <span className="ml-2 text-xs text-gray-400">trust {(d.trust * 100).toFixed(0)}%</span>
+            {graph && (
+              <div className="mt-4 max-h-56 space-y-1 overflow-auto text-xs text-gray-600">
+                {graph.edges?.slice(0, 20).map((e: any) => (
+                  <div key={e.id}>
+                    {e.source} --{(e.confidence * 100).toFixed(0)}%--&gt; {e.target}
+                    <span className="text-gray-400"> ({e.relation})</span>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-        </div>
-      </section>
+            )}
+            {response?.explain?.documents_used && (
+              <div className="mt-4 border-t border-gray-100 pt-3">
+                <div className="fm-label">Documents used</div>
+                <div className="mt-2 space-y-1 text-sm text-gray-700">
+                  {response.explain.documents_used.map((d: any) => (
+                    <div key={d.id}>
+                      {d.title}
+                      <span className="ml-2 text-xs text-gray-400">
+                        trust {(d.trust * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

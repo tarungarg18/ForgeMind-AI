@@ -48,7 +48,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     target: "tour-ask",
     title: "Ask a question",
     description:
-      "Type a question or use a suggestion. Answers use the selected machine as context so you do not need to repeat the tag.",
+      "Ask about any plant topic here. Mention equipment in the question itself (for example P-102) — you do not need to select it first.",
   },
   {
     id: "action",

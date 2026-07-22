@@ -46,10 +46,9 @@ def _eq_context(equipment_id: Optional[str]) -> dict[str, Any]:
 def _docs_for_equipment(equipment_id: Optional[str]) -> list[dict[str, Any]]:
     docs = []
     for d in store.documents.values():
-        if equipment_id and equipment_id not in d.equipment_ids and d.doc_type != "regulation":
-            continue
-        if not equipment_id and d.doc_type not in {"regulation", "incident", "sop"}:
-            continue
+        if equipment_id:
+            if equipment_id not in d.equipment_ids and d.doc_type != "regulation":
+                continue
         docs.append(
             {
                 "id": d.id,
@@ -61,9 +60,28 @@ def _docs_for_equipment(equipment_id: Optional[str]) -> list[dict[str, Any]]:
                 "content": d.content[:500],
             }
         )
-    # Prefer high trust
     docs.sort(key=lambda x: x["trust_score"], reverse=True)
-    return docs[:8]
+    return docs[:10]
+
+
+def _resolve_equipment_id(message: str, equipment_id: Optional[str]) -> Optional[str]:
+    """Prefer tags mentioned in the question; ignore UI selection."""
+    lower = message.lower()
+    for eq in store.equipment.values():
+        tag = eq.tag.lower()
+        name = eq.name.lower()
+        if tag in lower or tag.replace("-", "") in lower.replace("-", "") or name in lower:
+            return eq.id
+    if "valve" in lower:
+        return "eq-v12"
+    if "compressor" in lower:
+        return "eq-c8"
+    if "boiler" in lower:
+        return "eq-b3"
+    if "pump" in lower:
+        return "eq-p102"
+    return equipment_id
+
 
 
 def _heatmap(docs: list[dict[str, Any]], message: str) -> list[dict[str, Any]]:
@@ -86,13 +104,17 @@ def _heatmap(docs: list[dict[str, Any]], message: str) -> list[dict[str, Any]]:
 
 
 def _seeded_decision(message: str, mode: str, equipment_id: Optional[str]) -> ChatResponse:
-    ctx = _eq_context(equipment_id or "eq-p102")
-    eq_id = ctx.get("equipment_id", "eq-p102")
-    docs = _docs_for_equipment(eq_id)
+    resolved = _resolve_equipment_id(message, None)
+    eq_id = resolved or "eq-p102"
+    ctx = _eq_context(eq_id)
+    docs = _docs_for_equipment(resolved)  # None => broader corpus when no tag found
+    if not docs:
+        docs = _docs_for_equipment(eq_id)
     heatmap = _heatmap(docs, message)
-    conflicts = [c.summary for c in store.conflicts if "P-102" in c.entity]
-    gaps = [g.message for g in store.gaps if g.equipment_id == eq_id]
-    impact = store.impact_radius(eq_id)
+    conflicts = [c.summary for c in store.conflicts]
+    gaps = [g.message for g in store.gaps if not resolved or g.equipment_id == eq_id]
+    impact = store.impact_radius(eq_id) if resolved or "pump" in message.lower() or "p-102" in message.lower() else []
+
 
     lower = message.lower()
     ask_why_not = "why wasn't" in lower or "why wasnt" in lower or "not predicted" in lower or "why not" in lower
@@ -219,19 +241,26 @@ def _seeded_decision(message: str, mode: str, equipment_id: Optional[str]) -> Ch
 
 
 async def answer_query(req: ChatRequest) -> ChatResponse:
-    seeded = _seeded_decision(req.message, req.mode, req.equipment_id)
+    # Resolve equipment from the question text, not from UI selection
+    resolved = _resolve_equipment_id(req.message, None)
+    seeded = _seeded_decision(req.message, req.mode, resolved)
 
     if get_openrouter_client() is None:
         store.query_log.append({"message": req.message, "mode": req.mode, "source": "seeded"})
         return seeded
 
-    ctx = _eq_context(req.equipment_id or seeded.context_equipment_id)
-    docs = _docs_for_equipment(ctx.get("equipment_id"))
+    ctx = _eq_context(resolved) if resolved else {}
+    docs = _docs_for_equipment(resolved)
     conflicts = [c.model_dump() for c in store.conflicts]
-    gaps = [g.model_dump() for g in store.gaps if not ctx or g.equipment_id == ctx.get("equipment_id")]
+    gaps = [
+        g.model_dump()
+        for g in store.gaps
+        if not resolved or g.equipment_id == resolved
+    ]
 
     system = (
         "You are ForgeMind AI. Help plant staff find answers from equipment docs and history. "
+        "The user may ask about any plant topic. Infer equipment from the question when mentioned. "
         "Return JSON only with keys: answer, recommended_action, risk, business_impact, "
         "confidence, compliance (Factory Act/PESO/OISD as pass|warn|fail), reasoning_path (array), "
         "evidence (array). "
@@ -240,11 +269,11 @@ async def answer_query(req: ChatRequest) -> ChatResponse:
     )
     user_payload = {
         "question": req.message,
-        "context": ctx,
+        "inferred_equipment": ctx,
         "documents": docs,
         "conflicts": conflicts,
         "gaps": gaps,
-        "impact_radius": store.impact_radius(ctx.get("equipment_id", "eq-p102")) if ctx else [],
+        "impact_radius": store.impact_radius(resolved) if resolved else [],
     }
 
     try:

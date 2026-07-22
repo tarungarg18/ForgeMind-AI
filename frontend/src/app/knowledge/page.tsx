@@ -129,7 +129,7 @@ export default function KnowledgePage() {
                 href="/ai"
                 className="rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
               >
-                Ask AI about {detail.tag}
+                Ask AI (mention {detail.tag} in your question)
               </Link>
             </div>
 
