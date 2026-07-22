@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useEquipment } from "@/components/EquipmentContext";
 import { DecisionCardView } from "@/components/DecisionCard";
@@ -9,9 +10,9 @@ import { EvidenceHeatmap } from "@/components/EvidenceHeatmap";
 const MODES = [
   { id: "engineer", label: "Engineer" },
   { id: "maintenance", label: "Maintenance" },
-  { id: "safety", label: "Safety Officer" },
+  { id: "safety", label: "Safety" },
   { id: "compliance", label: "Compliance" },
-  { id: "manager", label: "Plant Manager" },
+  { id: "manager", label: "Manager" },
   { id: "auditor", label: "Auditor" },
 ];
 
@@ -103,179 +104,207 @@ export default function AIPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl text-white">
-          ForgeMind AI
-        </h1>
-        <p className="text-slate-400">
-          Ask about equipment. Answers include sources and a next step.
+    <div className="space-y-8">
+      <header>
+        <h1 className="text-2xl font-semibold text-gray-900">Ask AI</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Ask a question about the selected machine. You get an answer, sources, and a suggested action.
         </p>
-      </div>
+      </header>
 
       {ctx && (
-        <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
-          <div className="text-xs text-cyan-300/80">
-            Looking at
-          </div>
-          <div className="mt-2 grid gap-3 text-sm text-slate-200 sm:grid-cols-4">
-            <div>Equipment<br /><span className="text-white">{ctx.tag} · {ctx.name}</span></div>
-            <div>Department<br /><span className="text-white">{ctx.department}</span></div>
-            <div>Open Incidents<br /><span className="text-white">{ctx.open_incidents}</span></div>
-            <div>Maintenance Due<br /><span className="text-white">{ctx.maintenance_due_days} days</span></div>
+        <div className="fm-card bg-teal-50 p-4 ring-teal-100">
+          <div className="fm-label text-teal-800">Currently selected</div>
+          <div className="mt-2 grid gap-3 text-sm sm:grid-cols-4">
+            <div>
+              <div className="text-gray-500">Equipment</div>
+              <div className="font-medium text-gray-900">{ctx.tag} · {ctx.name}</div>
+            </div>
+            <div>
+              <div className="text-gray-500">Department</div>
+              <div className="font-medium text-gray-900">{ctx.department}</div>
+            </div>
+            <div>
+              <div className="text-gray-500">Open incidents</div>
+              <div className="font-medium text-gray-900">{ctx.open_incidents}</div>
+            </div>
+            <div>
+              <div className="text-gray-500">Maintenance due</div>
+              <div className="font-medium text-gray-900">{ctx.maintenance_due_days} days</div>
+            </div>
           </div>
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        {MODES.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => setMode(m.id)}
-            className={`rounded-md px-3 py-1.5 text-sm ${
-              mode === m.id
-                ? "bg-cyan-500 text-slate-950"
-                : "border border-white/10 bg-white/5 text-slate-300"
-            }`}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
+      <section className="space-y-3">
+        <div>
+          <div className="text-sm font-semibold text-gray-900">1. Answer style</div>
+          <p className="text-xs text-gray-500">Same question, different focus</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => setMode(m.id)}
+              className={`rounded-md px-3 py-1.5 text-sm ${
+                mode === m.id
+                  ? "bg-teal-700 text-white"
+                  : "bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50"
+              }`}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      </section>
 
-      <div className="grid gap-4 lg:grid-cols-12">
-        <div className="space-y-4 lg:col-span-7">
-          <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-            <div className="flex flex-wrap gap-2">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => {
-                    setMessage(s);
-                    ask(s);
-                  }}
-                  className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-300 hover:bg-white/10"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-            <div className="mt-3 flex gap-2">
-              <input
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && ask()}
-                className="flex-1 rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-cyan-400/40"
-                placeholder="Ask a question…"
-              />
+      <section className="space-y-3">
+        <div>
+          <div className="text-sm font-semibold text-gray-900">2. Ask your question</div>
+          <p className="text-xs text-gray-500">Use a suggestion or type your own</p>
+        </div>
+        <div className="fm-card p-4">
+          <div className="flex flex-wrap gap-2">
+            {SUGGESTIONS.map((s) => (
               <button
-                onClick={() => ask()}
-                disabled={loading}
-                className="rounded-md bg-cyan-500 px-4 py-2 text-sm font-medium text-slate-950 disabled:opacity-60"
+                key={s}
+                onClick={() => {
+                  setMessage(s);
+                  ask(s);
+                }}
+                className="rounded-md bg-gray-50 px-2 py-1 text-xs text-gray-700 ring-1 ring-gray-200 hover:bg-white"
               >
-                {loading ? "Thinking…" : "Ask"}
+                {s}
               </button>
-            </div>
-            <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-xs text-slate-400">
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && onImage(e.target.files[0])}
-              />
-              <span className="rounded-md border border-white/10 bg-white/5 px-2 py-1 hover:bg-white/10">
-                Ask by Image
-              </span>
-              Upload pump / valve / P&ID screenshot
-            </label>
+            ))}
+          </div>
+          <div className="mt-3 flex gap-2">
+            <input
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && ask()}
+              className="flex-1 rounded-md border border-gray-200 px-3 py-2 text-sm outline-none focus:border-teal-600"
+              placeholder="Ask a question…"
+            />
+            <button
+              onClick={() => ask()}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
+            >
+              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {loading ? "Working…" : "Ask"}
+            </button>
+          </div>
+          <label className="mt-3 inline-flex cursor-pointer items-center gap-2 text-xs text-gray-500">
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => e.target.files?.[0] && onImage(e.target.files[0])}
+            />
+            <span className="rounded-md bg-white px-2 py-1 ring-1 ring-gray-200 hover:bg-gray-50">
+              Ask from image
+            </span>
+            Upload a pump / valve / panel photo
+          </label>
+        </div>
+      </section>
+
+      {response && (
+        <section className="space-y-3">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">3. Answer</div>
+            <p className="text-xs text-gray-500">Plain answer, then suggested action and sources</p>
           </div>
 
-          {response && (
-            <div className="space-y-4">
-              <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4 text-slate-200">
-                <div className="text-xs text-slate-500">Answer ({response.mode})</div>
-                <p className="mt-2 leading-relaxed">{response.answer}</p>
-              </div>
-              <DecisionCardView card={response.decision_card} onFollowup={onFollowup} />
-              {response.explain && (
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-                    <h4 className="text-sm font-medium text-white">How we got here</h4>
-                    <ul className="mt-2 space-y-1 text-sm text-slate-300">
-                      {(response.explain.reasoning_path || []).map((r: string) => (
-                        <li key={r}>→ {r}</li>
-                      ))}
-                    </ul>
-                    {response.explain.conflicts?.length > 0 && (
-                      <div className="mt-3 rounded-md border border-red-400/30 bg-red-400/10 p-2 text-sm text-red-100">
-                        Conflict: {response.explain.conflicts[0]}
-                      </div>
-                    )}
-                    <div className="mt-3 text-xs text-slate-500">
-                      Confidence {(response.explain.confidence * 100).toFixed(0)}%
-                    </div>
+          <div className="fm-card p-4 text-sm leading-relaxed text-gray-800">
+            <div className="fm-label">Answer ({response.mode})</div>
+            <p className="mt-2">{response.answer}</p>
+          </div>
+
+          <DecisionCardView card={response.decision_card} onFollowup={onFollowup} />
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {response.explain && (
+              <div className="fm-card p-4">
+                <div className="text-sm font-semibold text-gray-900">How we got here</div>
+                <ul className="mt-2 space-y-1 text-sm text-gray-700">
+                  {(response.explain.reasoning_path || []).map((r: string) => (
+                    <li key={r}>- {r}</li>
+                  ))}
+                </ul>
+                {response.explain.conflicts?.length > 0 && (
+                  <div className="mt-3 rounded-md bg-red-50 p-2 text-sm text-red-900 ring-1 ring-red-100">
+                    Conflict: {response.explain.conflicts[0]}
                   </div>
-                  <EvidenceHeatmap items={response.explain.evidence_heatmap || []} />
+                )}
+                <div className="mt-3 text-xs text-gray-500">
+                  Confidence {(response.explain.confidence * 100).toFixed(0)}%
                 </div>
-              )}
-            </div>
-          )}
-
-          {sim && (
-            <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4">
-              <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-                What if we postpone maintenance?
-              </h3>
-              <div className="mt-3 space-y-2">
-                {sim.steps.map((s: any) => (
-                  <div key={s.label} className="rounded-md border border-white/10 bg-black/20 p-3">
-                    <div className="text-xs uppercase tracking-wider text-amber-200/70">{s.label}</div>
-                    <div className="text-white">{s.value}</div>
-                    <div className="text-sm text-slate-400">{s.detail}</div>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-3 text-sm text-amber-100">{sim.recommendation}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-4 lg:col-span-5">
-          <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-            <h3 className="text-sm font-medium text-white">Connected items</h3>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {(response?.impact_radius || ctx?.impact_radius || []).map((x: string) => (
-                <span key={x} className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-slate-200">
-                  {x}
-                </span>
-              ))}
-            </div>
-            {graph && (
-              <div className="mt-4 max-h-72 space-y-1 overflow-auto text-xs text-slate-400">
-                {graph.edges?.slice(0, 20).map((e: any) => (
-                  <div key={e.id}>
-                    {e.source} <span className="text-cyan-300">──{(e.confidence * 100).toFixed(0)}%──</span> {e.target}
-                    <span className="text-slate-600"> ({e.relation})</span>
-                  </div>
-                ))}
               </div>
             )}
+            <EvidenceHeatmap items={response.explain?.evidence_heatmap || []} />
           </div>
+        </section>
+      )}
+
+      {sim && (
+        <section className="space-y-3">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">What if we postpone?</div>
+            <p className="text-xs text-gray-500">Simple risk walkthrough</p>
+          </div>
+          <div className="fm-card space-y-2 p-4">
+            {sim.steps.map((s: any) => (
+              <div key={s.label} className="rounded-md bg-gray-50 p-3 ring-1 ring-gray-200">
+                <div className="fm-label">{s.label}</div>
+                <div className="font-medium text-gray-900">{s.value}</div>
+                <div className="text-sm text-gray-600">{s.detail}</div>
+              </div>
+            ))}
+            <p className="pt-2 text-sm text-gray-800">{sim.recommendation}</p>
+          </div>
+        </section>
+      )}
+
+      <section className="space-y-3">
+        <div>
+          <div className="text-sm font-semibold text-gray-900">Connected items</div>
+          <p className="text-xs text-gray-500">Nearby equipment and links from the graph</p>
+        </div>
+        <div className="fm-card p-4">
+          <div className="flex flex-wrap gap-2">
+            {(response?.impact_radius || ctx?.impact_radius || []).map((x: string) => (
+              <span key={x} className="rounded-md bg-gray-50 px-2 py-1 text-xs text-gray-700 ring-1 ring-gray-200">
+                {x}
+              </span>
+            ))}
+          </div>
+          {graph && (
+            <div className="mt-4 max-h-56 space-y-1 overflow-auto text-xs text-gray-600">
+              {graph.edges?.slice(0, 20).map((e: any) => (
+                <div key={e.id}>
+                  {e.source} --{(e.confidence * 100).toFixed(0)}%--&gt; {e.target}
+                  <span className="text-gray-400"> ({e.relation})</span>
+                </div>
+              ))}
+            </div>
+          )}
           {response?.explain?.documents_used && (
-            <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-              <h3 className="text-sm font-medium text-white">Documents Used</h3>
-              <div className="mt-2 space-y-2">
+            <div className="mt-4 border-t border-gray-100 pt-3">
+              <div className="fm-label">Documents used</div>
+              <div className="mt-2 space-y-1 text-sm text-gray-700">
                 {response.explain.documents_used.map((d: any) => (
-                  <div key={d.id} className="text-sm text-slate-300">
+                  <div key={d.id}>
                     {d.title}
-                    <span className="ml-2 text-xs text-slate-500">trust {(d.trust * 100).toFixed(0)}%</span>
+                    <span className="ml-2 text-xs text-gray-400">trust {(d.trust * 100).toFixed(0)}%</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }

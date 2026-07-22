@@ -1,9 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #07111a;
-  --foreground: #e2e8f0;
-  --fg: #e2e8f0;
+  --background: #ffffff;
+  --foreground: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --surface: #f9fafb;
+  --accent: #0f766e;
+  --accent-soft: #ccfbf1;
+  --danger: #b91c1c;
+  --warn: #b45309;
+  --ok: #047857;
 }
 
 @theme inline {
@@ -21,4 +28,17 @@ body {
 
 * {
   box-sizing: border-box;
+}
+
+.fm-card {
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 10px;
+}
+
+.fm-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.02em;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 
 export default function UploadPage() {
@@ -26,71 +27,75 @@ export default function UploadPage() {
   const latest = stages[stages.length - 1];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-[family-name:var(--font-display)] text-3xl text-white">Upload</h1>
-        <p className="text-slate-400">
-          Add plant documents. The graph updates as files are processed.
+    <div className="space-y-8">
+      <header>
+        <h1 className="text-2xl font-semibold text-gray-900">Upload</h1>
+        <p className="mt-1 text-sm text-gray-500">
+          Add plant documents here. After processing, they show up in Knowledge and Ask AI.
         </p>
-      </div>
+      </header>
 
-      <label className="flex min-h-48 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-cyan-400/30 bg-[#0a1522]/80 p-8 text-center hover:bg-[#0a1522]">
-        <input
-          type="file"
-          className="hidden"
-          accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.eml,.txt"
-          onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
-        />
-        <div className="font-[family-name:var(--font-display)] text-xl text-white">
-          Drop files here
+      <section className="space-y-3">
+        <div>
+          <div className="text-sm font-semibold text-gray-900">1. Choose a file</div>
+          <p className="text-xs text-gray-500">PDF, Word, Excel, image, or email (.eml)</p>
         </div>
-        <p className="mt-2 text-sm text-slate-400">
-          PDF, Word, Excel, images, or .eml
-        </p>
-        {busy && <p className="mt-4 text-cyan-300">Processing {filename}…</p>}
-      </label>
+        <label className="flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center hover:border-teal-600 hover:bg-teal-50/40">
+          <input
+            type="file"
+            className="hidden"
+            accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.eml,.txt"
+            onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
+          />
+          <div className="text-base font-medium text-gray-900">Drop a file or click to browse</div>
+          <p className="mt-1 text-sm text-gray-500">One file at a time for now</p>
+          {busy && (
+            <p className="mt-4 inline-flex items-center gap-2 text-sm text-teal-800">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Processing {filename}…
+            </p>
+          )}
+        </label>
+      </section>
 
       {stages.length > 0 && (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-            <h3 className="text-sm font-medium text-white">Pipeline</h3>
-            <ol className="mt-3 space-y-2">
-              {stages.map((s, idx) => (
-                <li key={idx} className="flex items-center gap-3 text-sm text-slate-300">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-cyan-500/20 text-xs text-cyan-300">
-                    {idx + 1}
-                  </span>
-                  <div>
-                    <div className="capitalize text-white">{s.stage}</div>
-                    <div className="text-xs text-slate-500">{s.detail}</div>
-                  </div>
-                </li>
-              ))}
-            </ol>
+        <section className="space-y-3">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">2. Processing status</div>
+            <p className="text-xs text-gray-500">What happens to the file, step by step</p>
           </div>
-          <div className="rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
-            <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-              Graph growth
-            </h3>
-            <div className="mt-6 grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-xs uppercase tracking-wider text-slate-500">Nodes</div>
-                <div className="font-[family-name:var(--font-display)] text-4xl text-cyan-300">
-                  {latest?.nodes ?? 0}
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="fm-card p-4">
+              <ol className="space-y-3">
+                {stages.map((s, idx) => (
+                  <li key={idx} className="flex items-start gap-3 text-sm">
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-50 text-xs font-semibold text-teal-800">
+                      {idx + 1}
+                    </span>
+                    <div>
+                      <div className="capitalize font-medium text-gray-900">{s.stage}</div>
+                      <div className="text-xs text-gray-500">{s.detail}</div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+            <div className="fm-card p-4">
+              <div className="text-sm font-semibold text-gray-900">Graph update</div>
+              <p className="text-xs text-gray-500">Nodes and links added from this file</p>
+              <div className="mt-6 grid grid-cols-2 gap-4">
+                <div>
+                  <div className="fm-label">Nodes</div>
+                  <div className="text-3xl font-semibold text-gray-900">{latest?.nodes ?? 0}</div>
                 </div>
-              </div>
-              <div>
-                <div className="text-xs uppercase tracking-wider text-slate-500">Edges</div>
-                <div className="font-[family-name:var(--font-display)] text-4xl text-amber-300">
-                  {latest?.edges ?? 0}
+                <div>
+                  <div className="fm-label">Edges</div>
+                  <div className="text-3xl font-semibold text-gray-900">{latest?.edges ?? 0}</div>
                 </div>
               </div>
             </div>
-            <p className="mt-4 text-sm text-slate-300">
-              New nodes and links get added when a document finishes processing.
-            </p>
           </div>
-        </div>
+        </section>
       )}
     </div>
   );

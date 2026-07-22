@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
 
 export default function InsightsPage() {
@@ -30,7 +31,6 @@ export default function InsightsPage() {
     setDemo(null);
     try {
       const res = await api.runDemo();
-      // reveal beats progressively
       const beats: any[] = [];
       for (const b of res.beats) {
         beats.push(b);
@@ -43,184 +43,196 @@ export default function InsightsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
+    <div className="space-y-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="font-[family-name:var(--font-display)] text-3xl text-white">Insights</h1>
-          <p className="text-slate-400">
-            Health score, open issues, and a quick walkthrough
+          <h1 className="text-2xl font-semibold text-gray-900">Insights</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            Overview of coverage, open issues, and a guided walkthrough.
           </p>
         </div>
         <button
           onClick={runDemo}
           disabled={running}
-          className="rounded-md bg-amber-400 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
         >
-          {running ? "Running Demo…" : "Run Demo"}
+          {running && <Loader2 className="h-4 w-4 animate-spin" />}
+          {running ? "Running…" : "Run walkthrough"}
         </button>
-      </div>
+      </header>
 
       {health && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-          {[
-            ["Overall", `${health.knowledge_health}%`],
-            ["Coverage", `${health.coverage}%`],
-            ["Compliance", `${health.compliance}%`],
-            ["Missing docs", health.missing_documents],
-            ["Critical gaps", health.critical_gaps],
-            ["Freshness", `${health.knowledge_freshness}%`],
-          ].map(([label, value]) => (
-            <div key={label as string} className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-              <div className="text-[11px] uppercase tracking-wider text-slate-500">{label}</div>
-              <div className="mt-1 font-[family-name:var(--font-display)] text-2xl text-white">{value}</div>
-            </div>
-          ))}
-        </div>
+        <section className="space-y-3">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">1. Coverage snapshot</div>
+            <p className="text-xs text-gray-500">How complete the plant knowledge looks right now</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              ["Overall", `${health.knowledge_health}%`],
+              ["Coverage", `${health.coverage}%`],
+              ["Compliance", `${health.compliance}%`],
+              ["Missing docs", health.missing_documents],
+              ["Critical gaps", health.critical_gaps],
+              ["Freshness", `${health.knowledge_freshness}%`],
+            ].map(([label, value]) => (
+              <div key={String(label)} className="fm-card p-4">
+                <div className="fm-label">{label}</div>
+                <div className="mt-1 text-2xl font-semibold text-gray-900">{value}</div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {demo && (
-        <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4">
-          <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-            Walkthrough
-          </h3>
-          <ol className="mt-3 space-y-2">
-            {demo.beats.map((b: any) => (
-              <li key={b.beat} className="flex gap-3 text-sm text-slate-200">
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-slate-950">
-                  {b.beat}
-                </span>
-                <div>
-                  <div className="font-medium text-white">{b.title}</div>
-                  <div className="text-slate-400">{b.detail}</div>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
+        <section className="space-y-3">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">Walkthrough progress</div>
+            <p className="text-xs text-gray-500">Auto steps through the main product flow</p>
+          </div>
+          <div className="fm-card p-4">
+            <ol className="space-y-3">
+              {demo.beats.map((b: any) => (
+                <li key={b.beat} className="flex gap-3 text-sm">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold text-white">
+                    {b.beat}
+                  </span>
+                  <div>
+                    <div className="font-medium text-gray-900">{b.title}</div>
+                    <div className="text-gray-500">{b.detail}</div>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-          <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-            Suggested work
-          </h3>
-          <div className="mt-3 space-y-2">
-            {recs.map((r) => (
-              <div key={r.id} className="rounded-md border border-white/10 bg-white/5 p-3">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
-                      r.priority === "HIGH"
-                        ? "bg-red-500/20 text-red-300"
-                        : r.priority === "MEDIUM"
-                        ? "bg-amber-500/20 text-amber-300"
-                        : "bg-slate-500/20 text-slate-300"
-                    }`}
-                  >
-                    {r.priority}
-                  </span>
-                  <span className="text-sm text-white">{r.title}</span>
-                </div>
-                <p className="mt-1 text-xs text-slate-400">{r.detail}</p>
-              </div>
-            ))}
-          </div>
+      <section className="space-y-3">
+        <div>
+          <div className="text-sm font-semibold text-gray-900">2. Open items</div>
+          <p className="text-xs text-gray-500">Work queue, conflicts, and missing docs</p>
         </div>
-
-        <div className="space-y-4">
-          <div className="rounded-xl border border-red-400/20 bg-red-400/5 p-4">
-            <h3 className="text-sm font-medium text-white">Document conflicts</h3>
-            {conflicts.map((c) => (
-              <div key={c.id} className="mt-3 text-sm text-red-100">
-                <div className="font-medium">{c.entity} · {c.field}</div>
-                <p className="text-red-100/80">{c.summary}</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {c.values.map((v: any) => (
-                    <span key={v.document_id} className="rounded border border-white/10 bg-black/20 px-2 py-1 text-xs">
-                      {v.source}: {v.value}
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="fm-card p-4">
+            <div className="text-sm font-semibold text-gray-900">Suggested work</div>
+            <div className="mt-3 space-y-2">
+              {recs.map((r) => (
+                <div key={r.id} className="rounded-md bg-gray-50 p-3 ring-1 ring-gray-200">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${
+                        r.priority === "HIGH"
+                          ? "bg-red-100 text-red-800"
+                          : r.priority === "MEDIUM"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      {r.priority}
                     </span>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
-            <h3 className="text-sm font-medium text-white">Missing docs</h3>
-            <div className="mt-2 space-y-2">
-              {gaps.map((g) => (
-                <div key={g.id} className="text-sm text-amber-100">
-                  {g.message}
+                    <span className="text-sm font-medium text-gray-900">{r.title}</span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-500">{r.detail}</p>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
+          <div className="space-y-4">
+            <div className="fm-card p-4">
+              <div className="text-sm font-semibold text-gray-900">Document conflicts</div>
+              {conflicts.map((c) => (
+                <div key={c.id} className="mt-3 text-sm">
+                  <div className="font-medium text-gray-900">
+                    {c.entity} · {c.field}
+                  </div>
+                  <p className="text-gray-600">{c.summary}</p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {c.values.map((v: any) => (
+                      <span key={v.document_id} className="rounded bg-gray-50 px-2 py-1 text-xs text-gray-700 ring-1 ring-gray-200">
+                        {v.source}: {v.value}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="fm-card p-4">
+              <div className="text-sm font-semibold text-gray-900">Missing docs</div>
+              <div className="mt-2 space-y-2">
+                {gaps.map((g) => (
+                  <div key={g.id} className="text-sm text-gray-700">
+                    {g.message}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="space-y-3">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-            Search vs ForgeMind
-          </h3>
+          <div>
+            <div className="text-sm font-semibold text-gray-900">3. Search vs ForgeMind</div>
+            <p className="text-xs text-gray-500">Rough time comparison for the same question</p>
+          </div>
           <button
             onClick={runCompare}
-            className="rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-sm text-slate-200"
+            className="rounded-md bg-white px-3 py-1.5 text-sm text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50"
           >
             Compare
           </button>
         </div>
         {compare && (
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <div className="rounded-md border border-white/10 bg-white/5 p-4">
-              <div className="text-xs uppercase tracking-wider text-slate-500">
-                {compare.traditional.label}
-              </div>
-              <div className="mt-2 text-3xl text-slate-300">{compare.traditional.seconds}s</div>
-              <ul className="mt-3 space-y-1 text-sm text-slate-400">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="fm-card p-4">
+              <div className="fm-label">{compare.traditional.label}</div>
+              <div className="mt-2 text-3xl font-semibold text-gray-400">{compare.traditional.seconds}s</div>
+              <ul className="mt-3 space-y-1 text-sm text-gray-500">
                 {compare.traditional.hits.map((h: any, i: number) => (
                   <li key={i}>{h.title}</li>
                 ))}
               </ul>
             </div>
-            <div className="rounded-md border border-cyan-400/30 bg-cyan-400/5 p-4">
-              <div className="text-xs uppercase tracking-wider text-cyan-300/80">
-                {compare.forgemind.label}
-              </div>
-              <div className="mt-2 text-3xl text-cyan-300">{compare.forgemind.seconds}s</div>
-              <p className="mt-3 text-sm text-slate-200">{compare.forgemind.answer}</p>
+            <div className="fm-card border-teal-200 bg-teal-50 p-4">
+              <div className="fm-label text-teal-800">{compare.forgemind.label}</div>
+              <div className="mt-2 text-3xl font-semibold text-teal-900">{compare.forgemind.seconds}s</div>
+              <p className="mt-3 text-sm text-gray-800">{compare.forgemind.answer}</p>
             </div>
           </div>
         )}
-      </div>
+      </section>
 
       {story && (
-        <div className="rounded-xl border border-white/10 bg-[#0a1522]/80 p-4">
+        <section className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h3 className="font-[family-name:var(--font-display)] text-lg text-white">
-              Incident summary
-            </h3>
+            <div>
+              <div className="text-sm font-semibold text-gray-900">4. Incident summary</div>
+              <p className="text-xs text-gray-500">Auto write-up from the near-miss report</p>
+            </div>
             <a
               href={api.incidentPdfUrl}
-              className="rounded-md bg-cyan-500 px-3 py-1.5 text-sm font-medium text-slate-950"
+              className="rounded-md bg-teal-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-teal-800"
             >
               Export PDF
             </a>
           </div>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2">
             {Object.entries(story)
               .filter(([k]) => !["document_id", "title"].includes(k))
               .map(([k, v]) => (
-                <div key={k} className="rounded-md border border-white/10 bg-white/5 p-3">
-                  <div className="text-xs uppercase tracking-wider text-slate-500">
-                    {k.replaceAll("_", " ")}
-                  </div>
-                  <div className="mt-1 text-sm text-slate-200">
+                <div key={k} className="fm-card p-3">
+                  <div className="fm-label">{k.replaceAll("_", " ")}</div>
+                  <div className="mt-1 text-sm text-gray-800">
                     {Array.isArray(v) ? (v as string[]).join(" · ") : String(v)}
                   </div>
                 </div>
               ))}
           </div>
-        </div>
+        </section>
       )}
     </div>
   );
