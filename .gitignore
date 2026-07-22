@@ -30,3 +30,6 @@ Thumbs.db
 # Uploads / runtime
 backend/data/uploads/
 *.log
+
+# Local reference docs (not part of the product)
+6a38ce305640d_ET_AI_Hackathon_2026_Problem_Statements.pdf
