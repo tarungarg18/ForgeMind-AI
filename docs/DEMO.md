@@ -1,17 +1,17 @@
 # Demo walkthrough
 
-## Fast path
+On **Insights**, click **Start walkthrough**.
 
-Insights → **Run Demo**
+That opens a real guided tour:
 
-## Manual path
+- Moves you between Upload → Knowledge → Ask AI → Insights
+- Highlights the part of the page you should look at
+- Shows a short description on each step
+- Controls: **Previous**, **Next step**, **Cancel** (or click the dimmed area)
 
-1. Upload a file and watch the graph counts update
-2. Knowledge Base → click **P-102**
-3. Check the timeline and open a linked document
-4. ForgeMind AI → ask `Why did Pump P-102 fail?`
-5. Look at the recommended action and sources
-6. Ask `Why wasn't this incident predicted?`
-7. Insights → conflicts + knowledge health
+You can also click through the app manually:
 
-That's enough to show the flow.
+1. Knowledge → select **P-102**
+2. Read History
+3. Ask AI → `Why did Pump P-102 fail?`
+4. Insights → coverage + conflicts

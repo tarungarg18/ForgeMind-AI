@@ -163,11 +163,12 @@ export default function AIPage() {
           <div className="text-sm font-semibold text-gray-900">2. Ask your question</div>
           <p className="text-xs text-gray-500">Use a suggestion or type your own</p>
         </div>
-        <div className="fm-card p-4">
+        <div data-tour="tour-ask" className="fm-card p-4">
           <div className="flex flex-wrap gap-2">
             {SUGGESTIONS.map((s) => (
               <button
                 key={s}
+                type="button"
                 onClick={() => {
                   setMessage(s);
                   ask(s);
@@ -187,6 +188,7 @@ export default function AIPage() {
               placeholder="Ask a question…"
             />
             <button
+              type="button"
               onClick={() => ask()}
               disabled={loading}
               className="inline-flex items-center gap-2 rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
@@ -210,43 +212,55 @@ export default function AIPage() {
         </div>
       </section>
 
-      {response && (
-        <section className="space-y-3">
-          <div>
-            <div className="text-sm font-semibold text-gray-900">3. Answer</div>
-            <p className="text-xs text-gray-500">Plain answer, then suggested action and sources</p>
+      <section className="space-y-3" data-tour="tour-action">
+        <div>
+          <div className="text-sm font-semibold text-gray-900">3. Answer & suggested action</div>
+          <p className="text-xs text-gray-500">
+            {response
+              ? "Plain answer, then suggested action and sources"
+              : "Ask a question above — the answer and next step will appear in this area"}
+          </p>
+        </div>
+
+        {!response && (
+          <div className="fm-card border-dashed p-6 text-sm text-gray-500">
+            Waiting for a question. Try “Why did Pump P-102 fail?”
           </div>
+        )}
 
-          <div className="fm-card p-4 text-sm leading-relaxed text-gray-800">
-            <div className="fm-label">Answer ({response.mode})</div>
-            <p className="mt-2">{response.answer}</p>
-          </div>
+        {response && (
+          <>
+            <div className="fm-card p-4 text-sm leading-relaxed text-gray-800">
+              <div className="fm-label">Answer ({response.mode})</div>
+              <p className="mt-2">{response.answer}</p>
+            </div>
 
-          <DecisionCardView card={response.decision_card} onFollowup={onFollowup} />
+            <DecisionCardView card={response.decision_card} onFollowup={onFollowup} />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            {response.explain && (
-              <div className="fm-card p-4">
-                <div className="text-sm font-semibold text-gray-900">How we got here</div>
-                <ul className="mt-2 space-y-1 text-sm text-gray-700">
-                  {(response.explain.reasoning_path || []).map((r: string) => (
-                    <li key={r}>- {r}</li>
-                  ))}
-                </ul>
-                {response.explain.conflicts?.length > 0 && (
-                  <div className="mt-3 rounded-md bg-red-50 p-2 text-sm text-red-900 ring-1 ring-red-100">
-                    Conflict: {response.explain.conflicts[0]}
+            <div className="grid gap-4 md:grid-cols-2">
+              {response.explain && (
+                <div className="fm-card p-4">
+                  <div className="text-sm font-semibold text-gray-900">How we got here</div>
+                  <ul className="mt-2 space-y-1 text-sm text-gray-700">
+                    {(response.explain.reasoning_path || []).map((r: string) => (
+                      <li key={r}>- {r}</li>
+                    ))}
+                  </ul>
+                  {response.explain.conflicts?.length > 0 && (
+                    <div className="mt-3 rounded-md bg-red-50 p-2 text-sm text-red-900 ring-1 ring-red-100">
+                      Conflict: {response.explain.conflicts[0]}
+                    </div>
+                  )}
+                  <div className="mt-3 text-xs text-gray-500">
+                    Confidence {(response.explain.confidence * 100).toFixed(0)}%
                   </div>
-                )}
-                <div className="mt-3 text-xs text-gray-500">
-                  Confidence {(response.explain.confidence * 100).toFixed(0)}%
                 </div>
-              </div>
-            )}
-            <EvidenceHeatmap items={response.explain?.evidence_heatmap || []} />
-          </div>
-        </section>
-      )}
+              )}
+              <EvidenceHeatmap items={response.explain?.evidence_heatmap || []} />
+            </div>
+          </>
+        )}
+      </section>
 
       {sim && (
         <section className="space-y-3">

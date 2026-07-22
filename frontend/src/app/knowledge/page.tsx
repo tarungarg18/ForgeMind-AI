@@ -71,7 +71,7 @@ export default function KnowledgePage() {
 
         {twin && (
           <div className="grid gap-4 lg:grid-cols-5">
-            <div className="fm-card overflow-hidden lg:col-span-2">
+            <div data-tour="tour-equipment" className="fm-card overflow-hidden lg:col-span-2">
               <div className="border-b border-gray-200 px-4 py-3">
                 <div className="text-sm font-medium text-gray-900">Equipment list</div>
                 <p className="text-xs text-gray-500">Click a row to select</p>
@@ -153,10 +153,12 @@ export default function KnowledgePage() {
               </div>
             </div>
 
-            <Timeline
-              events={detail.timeline || []}
-              onOpenDoc={async (id) => setDoc(await api.document(id))}
-            />
+            <div data-tour="tour-history">
+              <Timeline
+                events={detail.timeline || []}
+                onOpenDoc={async (id) => setDoc(await api.document(id))}
+              />
+            </div>
           </section>
 
           <section className="space-y-4">

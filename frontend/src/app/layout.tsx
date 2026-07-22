@@ -3,6 +3,8 @@ import { IBM_Plex_Sans, Sora } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { EquipmentProvider } from "@/components/EquipmentContext";
+import { WalkthroughProvider } from "@/components/WalkthroughContext";
+import { WalkthroughGuide } from "@/components/WalkthroughGuide";
 
 const body = IBM_Plex_Sans({
   variable: "--font-body",
@@ -30,7 +32,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${body.variable} ${display.variable} antialiased`}>
         <EquipmentProvider>
-          <AppShell>{children}</AppShell>
+          <WalkthroughProvider>
+            <AppShell>{children}</AppShell>
+            <WalkthroughGuide />
+          </WalkthroughProvider>
         </EquipmentProvider>
       </body>
     </html>

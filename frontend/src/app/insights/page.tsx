@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
 import { api } from "@/lib/api";
+import { useWalkthrough } from "@/components/WalkthroughContext";
 
 export default function InsightsPage() {
+  const { start, active } = useWalkthrough();
   const [health, setHealth] = useState<any>(null);
   const [recs, setRecs] = useState<any[]>([]);
   const [conflicts, setConflicts] = useState<any[]>([]);
   const [gaps, setGaps] = useState<any[]>([]);
   const [compare, setCompare] = useState<any>(null);
-  const [demo, setDemo] = useState<any>(null);
   const [story, setStory] = useState<any>(null);
-  const [running, setRunning] = useState(false);
 
   useEffect(() => {
     api.knowledgeHealth().then(setHealth).catch(console.error);
@@ -26,43 +25,27 @@ export default function InsightsPage() {
     setCompare(await api.searchCompare("Pump P-102 failure"));
   }
 
-  async function runDemo() {
-    setRunning(true);
-    setDemo(null);
-    try {
-      const res = await api.runDemo();
-      const beats: any[] = [];
-      for (const b of res.beats) {
-        beats.push(b);
-        setDemo({ ...res, beats: [...beats] });
-        await new Promise((r) => setTimeout(r, 500));
-      }
-    } finally {
-      setRunning(false);
-    }
-  }
-
   return (
     <div className="space-y-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Insights</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Overview of coverage, open issues, and a guided walkthrough.
+            Coverage, open issues, and a guided tour of the app.
           </p>
         </div>
         <button
-          onClick={runDemo}
-          disabled={running}
-          className="inline-flex items-center gap-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
+          type="button"
+          onClick={start}
+          disabled={active}
+          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
         >
-          {running && <Loader2 className="h-4 w-4 animate-spin" />}
-          {running ? "Running…" : "Run walkthrough"}
+          {active ? "Walkthrough running…" : "Start walkthrough"}
         </button>
       </header>
 
       {health && (
-        <section className="space-y-3">
+        <section className="space-y-3" data-tour="tour-coverage">
           <div>
             <div className="text-sm font-semibold text-gray-900">1. Coverage snapshot</div>
             <p className="text-xs text-gray-500">How complete the plant knowledge looks right now</p>
@@ -85,31 +68,7 @@ export default function InsightsPage() {
         </section>
       )}
 
-      {demo && (
-        <section className="space-y-3">
-          <div>
-            <div className="text-sm font-semibold text-gray-900">Walkthrough progress</div>
-            <p className="text-xs text-gray-500">Auto steps through the main product flow</p>
-          </div>
-          <div className="fm-card p-4">
-            <ol className="space-y-3">
-              {demo.beats.map((b: any) => (
-                <li key={b.beat} className="flex gap-3 text-sm">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold text-white">
-                    {b.beat}
-                  </span>
-                  <div>
-                    <div className="font-medium text-gray-900">{b.title}</div>
-                    <div className="text-gray-500">{b.detail}</div>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
-      )}
-
-      <section className="space-y-3">
+      <section className="space-y-3" data-tour="tour-issues">
         <div>
           <div className="text-sm font-semibold text-gray-900">2. Open items</div>
           <p className="text-xs text-gray-500">Work queue, conflicts, and missing docs</p>
@@ -151,7 +110,10 @@ export default function InsightsPage() {
                   <p className="text-gray-600">{c.summary}</p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {c.values.map((v: any) => (
-                      <span key={v.document_id} className="rounded bg-gray-50 px-2 py-1 text-xs text-gray-700 ring-1 ring-gray-200">
+                      <span
+                        key={v.document_id}
+                        className="rounded bg-gray-50 px-2 py-1 text-xs text-gray-700 ring-1 ring-gray-200"
+                      >
                         {v.source}: {v.value}
                       </span>
                     ))}
@@ -180,6 +142,7 @@ export default function InsightsPage() {
             <p className="text-xs text-gray-500">Rough time comparison for the same question</p>
           </div>
           <button
+            type="button"
             onClick={runCompare}
             className="rounded-md bg-white px-3 py-1.5 text-sm text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50"
           >
@@ -190,7 +153,9 @@ export default function InsightsPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="fm-card p-4">
               <div className="fm-label">{compare.traditional.label}</div>
-              <div className="mt-2 text-3xl font-semibold text-gray-400">{compare.traditional.seconds}s</div>
+              <div className="mt-2 text-3xl font-semibold text-gray-400">
+                {compare.traditional.seconds}s
+              </div>
               <ul className="mt-3 space-y-1 text-sm text-gray-500">
                 {compare.traditional.hits.map((h: any, i: number) => (
                   <li key={i}>{h.title}</li>
@@ -199,7 +164,9 @@ export default function InsightsPage() {
             </div>
             <div className="fm-card border-teal-200 bg-teal-50 p-4">
               <div className="fm-label text-teal-800">{compare.forgemind.label}</div>
-              <div className="mt-2 text-3xl font-semibold text-teal-900">{compare.forgemind.seconds}s</div>
+              <div className="mt-2 text-3xl font-semibold text-teal-900">
+                {compare.forgemind.seconds}s
+              </div>
               <p className="mt-3 text-sm text-gray-800">{compare.forgemind.answer}</p>
             </div>
           </div>

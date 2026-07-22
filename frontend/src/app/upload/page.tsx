@@ -40,7 +40,10 @@ export default function UploadPage() {
           <div className="text-sm font-semibold text-gray-900">1. Choose a file</div>
           <p className="text-xs text-gray-500">PDF, Word, Excel, image, or email (.eml)</p>
         </div>
-        <label className="flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center hover:border-teal-600 hover:bg-teal-50/40">
+        <label
+          data-tour="tour-upload"
+          className="flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center hover:border-teal-600 hover:bg-teal-50/40"
+        >
           <input
             type="file"
             className="hidden"
