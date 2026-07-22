@@ -7,10 +7,6 @@
   --border: #e5e7eb;
   --surface: #f9fafb;
   --accent: #0f766e;
-  --accent-soft: #ccfbf1;
-  --danger: #b91c1c;
-  --warn: #b45309;
-  --ok: #047857;
 }
 
 @theme inline {
@@ -30,15 +26,45 @@ body {
   box-sizing: border-box;
 }
 
+button,
+[role="button"],
+a,
+label[for],
+summary,
+select,
+input[type="file"],
+input[type="checkbox"],
+input[type="radio"] {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
 .fm-card {
   border: 1px solid var(--border);
   background: #fff;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .fm-label {
   font-size: 12px;
   font-weight: 600;
   color: var(--muted);
-  letter-spacing: 0.02em;
 }
+
+@keyframes fm-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.fm-slide-panel {
+  animation: fm-slide-in 0.2s ease-out;
+}
+
