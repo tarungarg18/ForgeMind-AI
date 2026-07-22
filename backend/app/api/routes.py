@@ -250,7 +250,15 @@ async def search_compare(q: str) -> dict[str, Any]:
 
 @router.post("/chat")
 async def chat(req: ChatRequest) -> dict[str, Any]:
-    resp = await answer_query(req)
+    try:
+        resp = await answer_query(req)
+    except Exception:
+        import logging
+
+        from app.services.intelligence import _seeded_decision
+
+        logging.getLogger("forgemind").exception("answer_query failed; falling back to seeded answer")
+        resp = _seeded_decision(req.message, req.mode, req.equipment_id)
     return resp.model_dump()
 
 
