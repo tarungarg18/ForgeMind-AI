@@ -15,8 +15,10 @@ router = APIRouter()
 
 
 @router.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok", "service": "ForgeMind AI"}
+async def health() -> dict[str, Any]:
+    from app.services.persistence import data_paths
+
+    return {"status": "ok", "service": "ForgeMind AI", "storage": data_paths()}
 
 
 @router.get("/stats")
@@ -125,18 +127,72 @@ async def notifications() -> list[dict[str, Any]]:
 
 @router.get("/search")
 async def smart_search(q: str) -> dict[str, Any]:
-    ql = q.lower()
+    from app.services.vectorstore import semantic_search
+
+    ql = q.strip().lower()
+    if not ql:
+        return {
+            "equipment": [],
+            "documents": [],
+            "incidents": [],
+            "maintenance": [],
+            "regulations": [],
+            "events": [],
+            "semantic": [],
+        }
+
+    def doc_match(d: Any) -> bool:
+        blob = f"{d.title} {d.summary} {d.content} {d.doc_type}".lower()
+        return ql in blob
+
+    docs = list(store.documents.values())
+    semantic = semantic_search(q, n=8)
+    # Merge semantic-only docs into documents facet
+    by_id = {d.id: d for d in docs}
+    semantic_docs = []
+    seen = set()
+    for hit in semantic:
+        doc = by_id.get(hit.get("document_id", ""))
+        if not doc or doc.id in seen:
+            continue
+        seen.add(doc.id)
+        payload = doc.model_dump()
+        payload["semantic_score"] = hit.get("score")
+        payload["semantic_snippet"] = hit.get("text", "")[:240]
+        semantic_docs.append(payload)
+
+    keyword_docs = [d.model_dump() for d in docs if doc_match(d)]
+    for kd in keyword_docs:
+        if kd["id"] not in seen:
+            semantic_docs.append(kd)
+            seen.add(kd["id"])
+
     return {
-        "equipment": [e.model_dump() for e in store.equipment.values() if ql in e.tag.lower() or ql in e.name.lower()],
-        "documents": [d.model_dump() for d in store.documents.values() if ql in d.title.lower() or ql in d.content.lower()],
+        "equipment": [
+            e.model_dump()
+            for e in store.equipment.values()
+            if ql in e.tag.lower() or ql in e.name.lower() or ql in e.department.lower()
+        ],
+        "documents": semantic_docs,
         "incidents": [
             d.model_dump()
-            for d in store.documents.values()
-            if d.doc_type == "incident" and (ql in d.title.lower() or ql in d.content.lower() or ql in "incident")
+            for d in docs
+            if d.doc_type in {"incident", "near_miss"} and doc_match(d)
         ],
-        "maintenance": [d.model_dump() for d in store.documents.values() if d.doc_type == "maintenance" and ql in (d.title + d.content).lower()],
-        "regulations": [d.model_dump() for d in store.documents.values() if d.doc_type == "regulation" and ql in (d.title + d.content).lower()],
-        "events": [e.model_dump() for e in store.events if ql in e.summary.lower() or ql in e.event_type.lower()],
+        "maintenance": [
+            d.model_dump()
+            for d in docs
+            if d.doc_type in {"maintenance", "work_order", "inspection"} and doc_match(d)
+        ],
+        "regulations": [
+            d.model_dump() for d in docs if d.doc_type == "regulation" and doc_match(d)
+        ],
+        "events": [
+            e.model_dump()
+            for e in store.events
+            if ql in e.summary.lower() or ql in e.event_type.lower()
+        ],
+        "semantic": semantic,
     }
 
 
@@ -220,25 +276,41 @@ async def incident_story_pdf(document_id: str = "doc-incident-p102-2025") -> Res
 
 @router.post("/upload")
 async def upload(file: UploadFile = File(...)) -> dict[str, Any]:
-    job_id = str(uuid.uuid4())
+    from app.services.ingest import ingest_upload
+    from app.services.persistence import data_paths
+
     content = await file.read()
-    stages = [
-        {"stage": "ocr", "detail": f"Parsing {file.filename}", "nodes": store.graph_stats["nodes"], "edges": store.graph_stats["edges"], "done": False},
-        {"stage": "entities", "detail": "Extracting equipment and events", "nodes": store.graph_stats["nodes"] + 2, "edges": store.graph_stats["edges"], "done": False},
-        {"stage": "graph", "detail": "Upserting knowledge graph relations", "nodes": store.graph_stats["nodes"] + 3, "edges": store.graph_stats["edges"] + 2, "done": False},
-        {"stage": "embeddings", "detail": "Storing trust-ranked embeddings", "nodes": store.graph_stats["nodes"] + 3, "edges": store.graph_stats["edges"] + 2, "done": False},
-        {"stage": "ready", "detail": "Document ready in Knowledge Base", "nodes": store.graph_stats["nodes"] + 3, "edges": store.graph_stats["edges"] + 2, "done": True},
-    ]
+    result = ingest_upload(file.filename or "upload.txt", content, store.equipment)
+    doc = result["document"]
+    event = result["event"]
+    store.add_document(doc, event)
+
+    nodes = store.graph_stats["nodes"]
+    edges = store.graph_stats["edges"]
+    stages = []
+    for stage in result["stages"]:
+        stages.append({**stage, "nodes": nodes, "edges": edges})
+
+    job_id = result["job_id"]
     store.upload_jobs[job_id] = stages
-    # mutate graph stats for live growth feel
-    store.graph_stats = {"nodes": stages[-1]["nodes"], "edges": stages[-1]["edges"]}
-    store.notifications.insert(0, {
-        "id": f"up-{job_id[:6]}",
-        "type": "upload",
-        "message": f"New document uploaded: {file.filename}",
-        "ts": "now",
-    })
-    return {"job_id": job_id, "filename": file.filename, "bytes": len(content), "stages": stages}
+    store.notifications.insert(
+        0,
+        {
+            "id": f"up-{job_id[:6]}",
+            "type": "upload",
+            "message": f"New document uploaded: {file.filename} (saved to SQLite + vector DB)",
+            "ts": "now",
+        },
+    )
+    return {
+        "job_id": job_id,
+        "filename": file.filename,
+        "bytes": len(content),
+        "document_id": doc.id,
+        "chunks": result["chunks"],
+        "storage": data_paths(),
+        "stages": stages,
+    }
 
 
 @router.get("/upload/{job_id}")

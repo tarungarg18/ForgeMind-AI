@@ -27,9 +27,13 @@ Thumbs.db
 .idea/
 .vscode/
 
-# Uploads / runtime
-backend/data/uploads/
+# Uploads / runtime data (SQLite, Chroma, files)
+backend/data/
 *.log
+
+# Local-only prep (demo script, hosting, pitch) — do not commit
+local-prep/
+
 
 # Local reference docs (not part of the product)
 6a38ce305640d_ET_AI_Hackathon_2026_Problem_Statements.pdf

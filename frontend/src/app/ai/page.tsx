@@ -142,7 +142,7 @@ export default function AIPage() {
           <div className="text-sm font-semibold text-gray-900">2. Ask your question</div>
           <p className="text-xs text-gray-500">Use a suggestion or type your own</p>
         </div>
-        <div data-tour="tour-ask" className="fm-card p-4">
+        <div data-tour="tour-ask" data-testid="ask-box" className="fm-card p-4">
           <div className="flex flex-wrap gap-2">
             {SUGGESTIONS.map((s) => (
               <button
@@ -160,6 +160,7 @@ export default function AIPage() {
           </div>
           <div className="mt-3 flex gap-2">
             <input
+              data-testid="ask-input"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && ask()}
@@ -168,6 +169,7 @@ export default function AIPage() {
             />
             <button
               type="button"
+              data-testid="ask-submit"
               onClick={() => ask()}
               disabled={loading}
               className="inline-flex items-center gap-2 rounded-md bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 disabled:opacity-60"
@@ -191,7 +193,7 @@ export default function AIPage() {
         </div>
       </section>
 
-      <section className="space-y-3" data-tour="tour-action">
+      <section className="space-y-3" data-tour="tour-action" data-testid="ask-action">
         <div>
           <div className="text-sm font-semibold text-gray-900">3. Answer & suggested action</div>
           <p className="text-xs text-gray-500">

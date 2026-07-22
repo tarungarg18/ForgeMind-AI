@@ -1,4 +1,4 @@
-"""In-memory sample plant data used for local runs."""
+"""Plant knowledge store — SQLite-backed with in-memory graph helpers."""
 
 from __future__ import annotations
 
@@ -384,9 +384,13 @@ def _recommendations() -> list[Recommendation]:
 
 class KnowledgeStore:
     def __init__(self) -> None:
-        self.reset()
+        self.upload_jobs: dict[str, list[dict[str, Any]]] = {}
+        self.query_log: list[dict[str, Any]] = []
+        self.notifications: list[dict[str, Any]] = []
+        self.boot()
 
     def reset(self) -> None:
+        """Load seed data into memory (and used to bootstrap empty SQLite)."""
         self.documents = {d.id: d for d in _docs()}
         self.equipment = {e.id: e for e in _equipment()}
         self.events = _events()
@@ -395,8 +399,8 @@ class KnowledgeStore:
         self.conflicts = _conflicts()
         self.gaps = _gaps()
         self.recommendations = _recommendations()
-        self.upload_jobs: dict[str, list[dict[str, Any]]] = {}
-        self.query_log: list[dict[str, Any]] = []
+        self.upload_jobs = {}
+        self.query_log = []
         self.notifications = [
             {"id": "n1", "type": "conflict", "message": "Pressure conflict detected on P-102", "ts": "2025-03-02T10:00:00"},
             {"id": "n2", "type": "maintenance", "message": "P-102 maintenance due in 12 days", "ts": "2025-07-01T08:00:00"},
@@ -404,6 +408,53 @@ class KnowledgeStore:
             {"id": "n4", "type": "gap", "message": "Missing vibration report for P-102", "ts": "2025-03-03T09:00:00"},
         ]
         self.graph_stats = {"nodes": len(self.nodes), "edges": len(self.edges)}
+
+    def boot(self) -> None:
+        """Load from SQLite; seed + index vectors on first run."""
+        from app.config import get_settings
+        from app.services import persistence as db
+        from app.services.ingest import reindex_all_documents
+
+        settings = get_settings()
+        db.init_db()
+        self.reset()
+
+        if db.document_count() == 0 and settings.seed_on_empty:
+            for doc in self.documents.values():
+                db.upsert_document(doc)
+            for eq in self.equipment.values():
+                db.upsert_equipment(eq)
+            for ev in self.events:
+                db.upsert_event(ev)
+            reindex_all_documents(self.documents)
+            db.set_meta("seeded", "1")
+            db.set_meta("vectors_ready", "1")
+        else:
+            self.documents = db.load_documents() or self.documents
+            loaded_eq = db.load_equipment()
+            if loaded_eq:
+                self.equipment = loaded_eq
+            loaded_ev = db.load_events()
+            if loaded_ev:
+                self.events = loaded_ev
+            if db.get_meta("vectors_ready") != "1":
+                reindex_all_documents(self.documents)
+                db.set_meta("vectors_ready", "1")
+
+        self.graph_stats = {"nodes": len(self.nodes), "edges": len(self.edges)}
+
+    def add_document(self, doc: Document, event: AssetEvent | None = None) -> None:
+        from app.services import persistence as db
+
+        self.documents[doc.id] = doc
+        db.upsert_document(doc)
+        if event:
+            self.events.append(event)
+            db.upsert_event(event)
+        self.graph_stats = {
+            "nodes": len(self.nodes) + len(self.documents),
+            "edges": len(self.edges) + max(0, len(doc.equipment_ids)),
+        }
 
     def knowledge_health(self) -> KnowledgeHealth:
         missing = len(self.gaps)

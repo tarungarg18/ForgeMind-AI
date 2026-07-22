@@ -64,6 +64,53 @@ def _docs_for_equipment(equipment_id: Optional[str]) -> list[dict[str, Any]]:
     return docs[:10]
 
 
+def _semantic_context(message: str, equipment_id: Optional[str], limit: int = 8) -> list[dict[str, Any]]:
+    """Retrieve relevant chunks from the vector DB, then attach parent docs."""
+    try:
+        from app.services.vectorstore import semantic_search
+    except Exception:
+        return _docs_for_equipment(equipment_id)
+
+    hits = semantic_search(message, n=limit)
+    if not hits:
+        return _docs_for_equipment(equipment_id)
+
+    by_id: dict[str, dict[str, Any]] = {}
+    for hit in hits:
+        doc = store.documents.get(hit.get("document_id", ""))
+        if not doc:
+            continue
+        if equipment_id and equipment_id not in doc.equipment_ids and doc.doc_type != "regulation":
+            # still allow strong semantic hits outside selected equipment
+            if float(hit.get("score") or 0) < 0.35:
+                continue
+        entry = by_id.get(doc.id)
+        snippet = hit.get("text") or doc.summary
+        if not entry:
+            by_id[doc.id] = {
+                "id": doc.id,
+                "title": doc.title,
+                "doc_type": doc.doc_type,
+                "trust_score": doc.trust_score,
+                "freshness": doc.freshness,
+                "summary": doc.summary,
+                "content": snippet[:500],
+                "semantic_score": hit.get("score"),
+            }
+        else:
+            # keep best score / richer snippet
+            if float(hit.get("score") or 0) > float(entry.get("semantic_score") or 0):
+                entry["semantic_score"] = hit.get("score")
+                entry["content"] = snippet[:500]
+
+    ranked = sorted(
+        by_id.values(),
+        key=lambda d: (float(d.get("semantic_score") or 0), d["trust_score"]),
+        reverse=True,
+    )
+    return ranked[:limit] or _docs_for_equipment(equipment_id)
+
+
 def _resolve_equipment_id(message: str, equipment_id: Optional[str]) -> Optional[str]:
     """Prefer tags mentioned in the question; ignore UI selection."""
     lower = message.lower()
@@ -107,7 +154,7 @@ def _seeded_decision(message: str, mode: str, equipment_id: Optional[str]) -> Ch
     resolved = _resolve_equipment_id(message, None)
     eq_id = resolved or "eq-p102"
     ctx = _eq_context(eq_id)
-    docs = _docs_for_equipment(resolved)  # None => broader corpus when no tag found
+    docs = _semantic_context(message, resolved)
     if not docs:
         docs = _docs_for_equipment(eq_id)
     heatmap = _heatmap(docs, message)
@@ -250,7 +297,7 @@ async def answer_query(req: ChatRequest) -> ChatResponse:
         return seeded
 
     ctx = _eq_context(resolved) if resolved else {}
-    docs = _docs_for_equipment(resolved)
+    docs = _semantic_context(req.message, resolved)
     conflicts = [c.model_dump() for c in store.conflicts]
     gaps = [
         g.model_dump()

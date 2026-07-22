@@ -1,3 +1,30 @@
-# Optional services for later (postgres / qdrant / neo4j).
-# Right now the app runs with the built-in sample store + OpenRouter.
-services: {}
+# Optional services. The app runs locally with:
+#   SQLite  -> backend/data/forgemind.db  (documents, equipment, events, chunk embeddings)
+#   Chroma  -> backend/data/chroma       (vector index for semantic search)
+#
+# Start these if you want Postgres / Qdrant instead of the embedded defaults later.
+services:
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["full"]
+    environment:
+      POSTGRES_USER: forgemind
+      POSTGRES_PASSWORD: forgemind
+      POSTGRES_DB: forgemind
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  qdrant:
+    image: qdrant/qdrant:v1.13.2
+    profiles: ["full"]
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrantdata:/qdrant/storage
+
+volumes:
+  pgdata:
+  qdrantdata:

@@ -4,10 +4,11 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export type WalkthroughStep = {
   id: string;
@@ -24,7 +25,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     target: "tour-upload",
     title: "Upload documents",
     description:
-      "Start here. Drop a plant PDF, Word, Excel, or image. ForgeMind reads it and adds it to the knowledge base.",
+      "Drop a plant PDF, Word, Excel, or image here. ForgeMind processes it into searchable knowledge.",
   },
   {
     id: "equipment",
@@ -32,7 +33,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     target: "tour-equipment",
     title: "Select equipment",
     description:
-      "Pick a machine from this list (or the map). Everything below updates for the selected tag — try P-102.",
+      "Click a machine in this list or on the plant map. History and documents below update for that asset.",
   },
   {
     id: "history",
@@ -40,7 +41,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     target: "tour-history",
     title: "Read history",
     description:
-      "This is the equipment timeline. Each row is an event (install, leak, maintenance) with a link to the source document.",
+      "Each row is an event for the selected machine — install, leak, maintenance — with a link to the source document.",
   },
   {
     id: "ask",
@@ -48,15 +49,15 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     target: "tour-ask",
     title: "Ask a question",
     description:
-      "Ask about any plant topic here. Mention equipment in the question itself (for example P-102) — you do not need to select it first.",
+      "Ask any plant question here. Include equipment in the text when needed (for example P-102).",
   },
   {
     id: "action",
     route: "/ai",
     target: "tour-action",
-    title: "Suggested action",
+    title: "Answer area",
     description:
-      "After you ask, the answer and a clear next step show here — risk, impact, sources, and buttons like Approve or Run Simulator.",
+      "Answers and suggested next steps appear in this section after you ask.",
   },
   {
     id: "coverage",
@@ -64,7 +65,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     target: "tour-coverage",
     title: "Coverage snapshot",
     description:
-      "Insights shows how complete your plant docs are — overall score, missing files, and freshness.",
+      "See how complete plant documentation looks — overall score, missing files, freshness.",
   },
   {
     id: "issues",
@@ -72,7 +73,7 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     target: "tour-issues",
     title: "Open issues",
     description:
-      "Suggested work, document conflicts (like pressure mismatches), and missing docs appear here so you know what to fix next.",
+      "Recommendations, document conflicts, and missing docs show here.",
   },
 ];
 
@@ -81,27 +82,66 @@ type WalkthroughCtx = {
   stepIndex: number;
   step: WalkthroughStep | null;
   total: number;
+  routeReady: boolean;
   start: () => void;
   next: () => void;
   prev: () => void;
   cancel: () => void;
 };
 
+const STORAGE_KEY = "forgemind-walkthrough";
+
 const WalkthroughContext = createContext<WalkthroughCtx | null>(null);
 
 export function WalkthroughProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [active, setActive] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { active: boolean; stepIndex: number };
+      if (parsed.active) {
+        setActive(true);
+        setStepIndex(Math.min(Math.max(parsed.stepIndex, 0), WALKTHROUGH_STEPS.length - 1));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!active) {
+      sessionStorage.removeItem(STORAGE_KEY);
+      return;
+    }
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ active, stepIndex }));
+  }, [active, stepIndex]);
+
+  const step = active ? WALKTHROUGH_STEPS[stepIndex] ?? null : null;
+  const routeReady = Boolean(step && pathname === step.route);
+
+  // Keep URL on the active step's route (handles refresh / deep link mid-tour)
+  useEffect(() => {
+    if (!active || !step) return;
+    if (pathname !== step.route) {
+      router.push(step.route);
+    }
+  }, [active, step, pathname, router]);
+
   const goToStep = useCallback(
     (index: number) => {
-      const step = WALKTHROUGH_STEPS[index];
-      if (!step) return;
+      const nextStep = WALKTHROUGH_STEPS[index];
+      if (!nextStep) return;
       setStepIndex(index);
-      router.push(step.route);
+      if (pathname !== nextStep.route) {
+        router.push(nextStep.route);
+      }
     },
-    [router]
+    [pathname, router]
   );
 
   const start = useCallback(() => {
@@ -113,12 +153,14 @@ export function WalkthroughProvider({ children }: { children: React.ReactNode })
   const cancel = useCallback(() => {
     setActive(false);
     setStepIndex(0);
+    sessionStorage.removeItem(STORAGE_KEY);
   }, []);
 
   const next = useCallback(() => {
     if (stepIndex >= WALKTHROUGH_STEPS.length - 1) {
       setActive(false);
       setStepIndex(0);
+      sessionStorage.removeItem(STORAGE_KEY);
       router.push("/insights");
       return;
     }
@@ -134,14 +176,15 @@ export function WalkthroughProvider({ children }: { children: React.ReactNode })
     () => ({
       active,
       stepIndex,
-      step: active ? WALKTHROUGH_STEPS[stepIndex] : null,
+      step,
       total: WALKTHROUGH_STEPS.length,
+      routeReady,
       start,
       next,
       prev,
       cancel,
     }),
-    [active, cancel, next, prev, start, stepIndex]
+    [active, cancel, next, prev, routeReady, start, step, stepIndex]
   );
 
   return (

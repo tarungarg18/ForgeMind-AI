@@ -46,9 +46,11 @@ export default function UploadPage() {
         <h2 className="text-base font-semibold text-gray-900">1. Choose a file</h2>
         <label
           data-tour="tour-upload"
+          data-testid="upload-dropzone"
           className="flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center hover:border-teal-600 hover:bg-teal-50/50"
         >
           <input
+            data-testid="upload-input"
             type="file"
             className="hidden"
             accept=".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.eml,.txt"
@@ -66,7 +68,7 @@ export default function UploadPage() {
       </section>
 
       {stages.length > 0 ? (
-        <section className="space-y-3">
+        <section className="space-y-3" data-testid="upload-stages">
           <h2 className="text-base font-semibold text-gray-900">2. Processing</h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div className="fm-card p-4">

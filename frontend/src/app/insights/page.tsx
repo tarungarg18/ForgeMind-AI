@@ -36,6 +36,7 @@ export default function InsightsPage() {
         </div>
         <button
           type="button"
+          data-testid="start-walkthrough"
           onClick={start}
           disabled={active}
           className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60"
@@ -45,7 +46,7 @@ export default function InsightsPage() {
       </header>
 
       {health && (
-        <section className="space-y-3" data-tour="tour-coverage">
+        <section className="space-y-3" data-tour="tour-coverage" data-testid="insights-coverage">
           <div>
             <div className="text-sm font-semibold text-gray-900">1. Coverage snapshot</div>
             <p className="text-xs text-gray-500">How complete the plant knowledge looks right now</p>
@@ -68,7 +69,7 @@ export default function InsightsPage() {
         </section>
       )}
 
-      <section className="space-y-3" data-tour="tour-issues">
+      <section className="space-y-3" data-tour="tour-issues" data-testid="insights-issues">
         <div>
           <div className="text-sm font-semibold text-gray-900">2. Open items</div>
           <p className="text-xs text-gray-500">Work queue, conflicts, and missing docs</p>

@@ -1,24 +1,31 @@
 # ForgeMind AI
 
 Plant docs are usually scattered — manuals, inspections, work orders, incident reports.
-ForgeMind puts them in one place so you can ask questions about equipment and get answers with sources.
+ForgeMind puts them in one place so teams can **upload, search, and ask** with sources.
 
 ## What you can do
 
-- Upload PDFs and other plant documents
-- See equipment on a simple plant map
-- Open an asset timeline (install → maintenance → incidents)
-- Ask questions in chat (answers include a recommended action)
-- Spot missing docs, conflicts between documents, and compliance gaps
+- Upload plant documents (PDF, Word, Excel, text) — **persisted for everyone**, not discarded
+- Search with keyword + **semantic** (vector) matching
+- Browse equipment on a plant map and open asset history
+- Ask AI any plant question (mention tags like P-102 in the question)
+- See knowledge health, conflicts, and missing-doc gaps
+- Run an interactive product walkthrough (Next / Prev / Cancel)
 
-Main screens: **Upload**, **Knowledge Base**, **ForgeMind AI**, **Insights**
+Screens: **Home → Upload → Knowledge → Ask AI → Insights**
 
 ## Stack
 
-- Frontend: Next.js + Tailwind
-- Backend: FastAPI
-- LLM: OpenRouter
-- Sample plant data is seeded for local demo
+| Layer | Choice |
+|---|---|
+| Frontend | Next.js + Tailwind |
+| Backend | FastAPI |
+| Document DB | **SQLite** (`backend/data/forgemind.db`) |
+| Vector search | Local embeddings in SQLite (default); optional ChromaDB |
+| LLM | OpenRouter |
+| Optional later | Postgres + Qdrant (`docker compose --profile full up`) |
+
+First boot seeds sample plant data (P-102 timeline, pressure conflict, gaps). After that, uploads are parsed, stored, chunked, and embedded.
 
 ## Setup
 
@@ -27,11 +34,12 @@ Main screens: **Upload**, **Knowledge Base**, **ForgeMind AI**, **Insights**
 ```bash
 cd backend
 python -m venv .venv
-.\.venv\Scripts\activate
+.\.venv\Scripts\activate          # Windows
+# source .venv/bin/activate       # macOS/Linux
 pip install -r requirements.txt
-copy .env.example .env
-# put your OpenRouter key in .env
-uvicorn app.main:app --reload --port 8000
+copy .env.example .env            # or: cp .env.example .env
+# add OPENROUTER_API_KEY in .env
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
 ### Frontend
@@ -43,25 +51,53 @@ npm install
 npm run dev
 ```
 
-App: http://localhost:3000  
-API: http://127.0.0.1:8000/docs
+| Service | URL |
+|---|---|
+| App | http://localhost:3000 |
+| API docs | http://127.0.0.1:8000/docs |
+| Health | http://127.0.0.1:8000/api/health |
 
-## Env
+## Environment
 
-`backend/.env`:
+`backend/.env` (never commit this file):
 
 ```
 OPENROUTER_API_KEY=your_key
 OPENROUTER_BASE_URL=https://openrouter.ai/api/v1
 OPENROUTER_MODEL=google/gemini-2.0-flash-001
+OPENROUTER_EMBEDDING_MODEL=openai/text-embedding-3-small
+VECTOR_BACKEND=local
+SEED_ON_EMPTY=true
+CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
 ```
 
-If no key is set, chat still works using the built-in sample answers.
+`frontend/.env.local`:
 
-## Quick try
+```
+NEXT_PUBLIC_API_URL=http://127.0.0.1:8000/api
+```
 
-1. Open Knowledge Base and click pump **P-102**
-2. Go to ForgeMind AI and ask why it failed
-3. Or hit **Run Demo** on Insights
+Without an API key, chat still returns sample answers; semantic ranking still works with the local embedder.
+
+## Quick demo path
+
+1. **Insights** → Start walkthrough (or skip to manual flow)
+2. **Upload** a `.txt` that mentions P-102
+3. **Knowledge** → search “seal leakage” or “vibration”
+4. **Ask AI** → “Why did Pump P-102 fail?”
+5. **Insights** → coverage, conflicts, gaps
+
+## Docs
+
+- [Architecture](docs/ARCHITECTURE.md) — storage, ingest, retrieval
+- [In-app walkthrough](docs/DEMO.md) — tour controls
+
+## Smoke test
+
+```bash
+cd backend
+.\.venv\Scripts\activate
+python scripts/smoke_test.py
+```
 
 Repo: https://github.com/tarungarg18/ForgeMind-AI
